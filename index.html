@@ -122,6 +122,8 @@ const S = { loading:true, teacherExists:true, user:null, view:'home', authMode:'
 const $ = id => document.getElementById(id);
 const esc = s => (s ?? '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt = d => d ? new Date(d).toLocaleString('ar-EG') : '—';
+const withTimeout = pr => Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new Error('الاتصال بطيء أو معلّق، حدّث الصفحة وجرّب تاني')), 20000))]);
+window.addEventListener('unhandledrejection', ev => { S.err = 'حصل خطأ غير متوقع: ' + (ev.reason?.message || ev.reason); S.loading = false; render(); });
 const render = () => { $('app').innerHTML = App(); };
 const set = o => { Object.assign(S, o); render(); };
 const lesson = id => S.lessons.find(l => l.id === id);
@@ -219,14 +221,14 @@ async function doTeacherSignup(u, pass) {
 
 async function handleStudentAuth(e) {
   e.preventDefault();
-  const btn = e.target.querySelector('button[type=submit]'); btn.disabled = true;
+  const btn = e.target.querySelector('button[type=submit]'); btn.disabled = true; btn.textContent = 'جاري الدخول...';
   const v = id => {
     let x = ($(id)?.value || '').trim();
     if (/phone/.test(id)) x = x.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[\s-]/g, '');
     return x;
   };
   try {
-    if (S.authMode === 'login') await doLogin(v('f_phone'), $('f_pass').value, false);
+    if (S.authMode === 'login') await withTimeout(doLogin(v('f_phone'), $('f_pass').value, false));
     else await doSignup({ name: v('f_name'), phone: v('f_phone'), pass: $('f_pass').value, grade: v('f_grade'),
       parentPhone: v('f_parentphone'), childName: v('f_childname'), childGrade: v('f_childgrade') });
     S.err = ''; S.ok = '';
@@ -238,7 +240,7 @@ async function handleTeacherAuth(e) {
   e.preventDefault();
   try {
     const u = $('t_user').value.trim(), p = $('t_pass').value;
-    if (S.teacherExists) await doLogin(u, p, true); else await doTeacherSignup(u, p);
+    if (S.teacherExists) await withTimeout(doLogin(u, p, true)); else await withTimeout(doTeacherSignup(u, p));
     S.err = '';
   }
   catch (er) { S.err = er.message; }
@@ -579,13 +581,13 @@ function Teacher() {
       <div class="ig"><label>رابط Google Drive (أو mp4 مباشر)</label><input id="n_url" dir="ltr" placeholder="https://drive.google.com/file/d/..."></div></div>
       <div class="row"><div class="ig"><label>رابط امتحان جوجل فورم (اختياري)</label><input id="n_exam" dir="ltr"></div>
       <div class="ig"><label>عدد الأكواد</label><input type="number" id="n_count" value="100" min="1" max="500"></div></div>
-      <button class="btn" type="submit">حفظ الدرس وتوليد الأكواد</button>
-        <button class="sm w" onclick="set({printLesson:'${l.id}'})">📄 PDF</button></form>
+      <button class="btn" type="submit">حفظ الدرس وتوليد الأكواد</button></form>
       ${S.lessons.map(l => {
         const cs = S.codes.filter(c => c.lesson_id === l.id), free = cs.filter(c => !c.used_by);
         return `<div class="lc" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
         <div><h3>${esc(l.title)}</h3><div class="mu">${esc(l.grade)} • الأكواد: ${free.length} متاح / ${cs.length - free.length} مستخدم</div></div>
         <div><button class="sm" onclick="set({showCodes:S.showCodes==='${l.id}'?null:'${l.id}'})">الأكواد</button>
+        <button class="sm w" onclick="set({printLesson:'${l.id}'})">📄 PDF</button>
         <button class="sm d" onclick="delLesson('${l.id}')">حذف</button></div></div>
         ${S.showCodes === l.id ? `<textarea class="cl" readonly>${free.map(c => c.code).join('\n')}</textarea>` : ''}</div>`;
       }).join('') || '<div class="empty">لا توجد دروس.</div>'}`;
