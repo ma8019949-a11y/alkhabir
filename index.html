@@ -75,6 +75,17 @@ th{color:var(--mu);background:var(--bg);font-size:13px}tr:last-child td{border-b
 .empty{text-align:center;padding:50px 20px;color:var(--mu)}
 .blk{text-align:center;padding:60px 20px;background:var(--dnbg);border:1px solid rgba(239,68,68,.3);border-radius:var(--rl)}.blk h2{color:var(--dn);margin-bottom:12px}
 textarea.cl{width:100%;height:140px;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:var(--rm);padding:10px;font-family:monospace;margin-top:10px}
+.pv{position:fixed;inset:0;background:#fff;color:#000;z-index:500;overflow:auto;padding:24px}
+.pv .bar{display:flex;gap:10px;margin-bottom:16px;align-items:center}
+.pv h2{margin-bottom:6px}
+.cg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.cg div{border:1px dashed #888;padding:10px;text-align:center;font-family:monospace;font-size:16px;letter-spacing:2px;break-inside:avoid}
+@media print{.noprint{display:none!important}#app>.topbar,#app>.container,.footer{display:none!important}.pv{position:static;overflow:visible;padding:0}}
+.fsb{position:absolute;top:8px;left:8px;z-index:3;background:rgba(0,0,0,.6);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:8px;padding:7px 12px;font-size:14px;font-weight:700;cursor:pointer}
+.vr.full{position:fixed;inset:0;width:100vw;height:100vh;padding-top:0;margin:0;border-radius:0;z-index:600}
+.vr:fullscreen{position:fixed;inset:0;width:100vw;height:100vh;padding-top:0;margin:0;border-radius:0}
+.vr:-webkit-full-screen{position:fixed;inset:0;width:100vw;height:100vh;padding-top:0;margin:0;border-radius:0}
+@media(max-width:600px){.container{padding:16px 6px 40px}.vc{padding:10px;border-radius:14px}.topbar{padding:10px 12px}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
@@ -249,6 +260,14 @@ const toggleAuthMode = () => set({ authMode: S.authMode === 'login' ? 'signup' :
 const openCode = lid => set({ codeModal: lid, codeErr: '' });
 const closeCode = () => set({ codeModal: null });
 const openExam = lid => set({ lessonId: lid, view: 'exam' });
+function fsVideo() {
+  const el = $('vbox'), d = document;
+  if (d.fullscreenElement || d.webkitFullscreenElement) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); return; }
+  if (el.classList.contains('full')) { el.classList.remove('full'); return; }
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (req) Promise.resolve(req.call(el)).then(() => { try { screen.orientation.lock('landscape'); } catch (e) {} }).catch(() => el.classList.add('full'));
+  else el.classList.add('full');
+}
 const goHome = () => set({ view: 'home', lessonId: null });
 
 async function submitCode(e) {
@@ -399,7 +418,7 @@ function App() {
     else if (S.view === 'exam') body = ExamView();
     else body = StudentHome();
   }
-  return TopBar() + `<div class="container">${body}</div>` + (S.codeModal ? CodeModal() : '') + (S.drawer ? Drawer() : '');
+  return TopBar() + `<div class="container">${body}</div>` + (S.codeModal ? CodeModal() : '') + (S.drawer ? Drawer() : '') + (S.printLesson ? PrintView() : '');
 }
 
 function Landing() {
@@ -491,13 +510,24 @@ function VideoView() {
   const l = lesson(S.lessonId);
   return `<button class="back" onclick="goHome()">← رجوع للدروس</button>
   <div class="vc"><h2>${esc(l?.title)}</h2><div class="mu">${esc(l?.grade)}</div>
-  <div class="vr">
+  <div class="vr" id="vbox"><button class="fsb" onclick="fsVideo()">⛶ ملء الشاشة</button>
     ${S.videoUrl.includes('drive.google.com')
-      ? `<iframe src="${esc(S.videoUrl)}" sandbox="allow-scripts allow-same-origin" allow="autoplay; fullscreen" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe>
-         <div style="position:absolute;top:0;right:0;width:80px;height:64px"></div>`
+      ? `<iframe src="${esc(S.videoUrl)}" allow="autoplay; fullscreen; encrypted-media" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe>
+         <div style="position:absolute;top:0;right:0;width:96px;height:88px;z-index:2"></div>`
       : `<video src="${esc(S.videoUrl)}" controls controlsList="nodownload" disablePictureInPicture oncontextmenu="return false"></video>`}
     <div style="position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.22);font-size:clamp(14px,3vw,26px);font-weight:700;transform:rotate(-20deg);text-align:center">${esc(S.user.full_name)} • ${esc(S.user.phone)}</div>
   </div></div>`;
+}
+
+function PrintView() {
+  const l = lesson(S.printLesson);
+  const free = S.codes.filter(c => c.lesson_id === S.printLesson && !c.used_by);
+  return `<div class="pv"><div class="bar noprint">
+    <button class="btn" style="width:auto;padding:10px 20px;margin:0" onclick="window.print()">🖨 طباعة / حفظ PDF</button>
+    <button class="ghost" onclick="set({printLesson:null})">إغلاق</button>
+    <span style="font-size:13px;color:#555">في نافذة الطباعة اختار "Save as PDF"</span></div>
+    <h2>${esc(l?.title)}</h2><div>${esc(l?.grade)} • ${free.length} كود غير مستخدم</div>
+    <div class="cg">${free.map((c, i) => `<div>${i + 1}. ${esc(c.code)}</div>`).join('')}</div></div>`;
 }
 
 function Drawer() {
@@ -549,7 +579,8 @@ function Teacher() {
       <div class="ig"><label>رابط Google Drive (أو mp4 مباشر)</label><input id="n_url" dir="ltr" placeholder="https://drive.google.com/file/d/..."></div></div>
       <div class="row"><div class="ig"><label>رابط امتحان جوجل فورم (اختياري)</label><input id="n_exam" dir="ltr"></div>
       <div class="ig"><label>عدد الأكواد</label><input type="number" id="n_count" value="100" min="1" max="500"></div></div>
-      <button class="btn" type="submit">حفظ الدرس وتوليد الأكواد</button></form>
+      <button class="btn" type="submit">حفظ الدرس وتوليد الأكواد</button>
+        <button class="sm w" onclick="set({printLesson:'${l.id}'})">📄 PDF</button></form>
       ${S.lessons.map(l => {
         const cs = S.codes.filter(c => c.lesson_id === l.id), free = cs.filter(c => !c.used_by);
         return `<div class="lc" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
