@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>منصة الخبير | الأستاذ عبد المنعم رجب</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;900&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root[data-theme="dark"]{--bg:#0B0F19;--card:#131C2E;--bd:#21324E;--tx:#F1F5F9;--mu:#8FA2BC;--sh:0 10px 30px -10px rgba(0,0,0,.5)}
+:root[data-theme="light"]{--bg:#F8FAFC;--card:#FFF;--bd:#E2E8F0;--tx:#0F172A;--mu:#64748B;--sh:0 10px 30px -10px rgba(0,0,0,.08)}
+:root{--pr:#4F46E5;--glow:rgba(79,70,229,.2);--grad:linear-gradient(135deg,#6366F1,#4F46E5 50%,#3730A3);--ok:#10B981;--okbg:rgba(16,185,129,.12);--dn:#EF4444;--dnbg:rgba(239,68,68,.12);--wn:#F59E0B;--wnbg:rgba(245,158,11,.12);--rl:20px;--rm:12px}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--tx);font-family:'Tajawal',sans-serif;min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden}
+h1,h2,h3,.bt{font-family:'Cairo',sans-serif}
+button,input,select,textarea{font-family:inherit;outline:none}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;background:var(--card);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:10px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:44px;height:44px;border-radius:var(--rm);background:var(--grad);display:flex;align-items:center;justify-content:center;font-family:'Cairo';font-weight:900;color:#fff;font-size:22px}
+.bt{font-size:19px;font-weight:900}.bs{font-size:12px;color:var(--mu)}
+.acts{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.badge{background:var(--bg);border:1px solid var(--bd);padding:8px 14px;border-radius:999px;font-size:14px;color:var(--mu)}.badge b{color:var(--tx)}
+.ic{width:40px;height:40px;border-radius:var(--rm);border:1px solid var(--bd);background:var(--bg);color:var(--tx);cursor:pointer;font-size:18px}
+.ghost{background:transparent;border:1px solid var(--bd);color:var(--mu);padding:8px 14px;border-radius:var(--rm);font-weight:700;cursor:pointer}
+.ghost:hover{border-color:var(--dn);color:var(--dn)}
+.container{max-width:1150px;margin:0 auto;padding:36px 16px 50px;flex:1;width:100%}
+.footer{text-align:center;padding:18px;border-top:1px solid var(--bd);color:var(--mu);font-size:13px;font-weight:700;background:var(--card);margin-top:auto}
+.hero{text-align:center;margin-bottom:30px}.hero h1{font-size:32px;font-weight:900;margin-bottom:8px}.hero p{color:var(--mu)}
+.auth{max-width:460px;margin:0 auto;background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:28px;box-shadow:var(--sh)}
+.tabs{display:flex;background:var(--bg);border:1px solid var(--bd);border-radius:var(--rm);padding:5px;margin-bottom:20px;gap:4px}
+.tab{flex:1;padding:10px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--mu);font-weight:700;cursor:pointer}
+.tab.on{background:var(--glow);color:var(--pr);border-color:rgba(79,70,229,.3)}
+.ig{margin-bottom:14px;flex:1}.ig label{display:block;font-size:13.5px;color:var(--mu);margin-bottom:6px;font-weight:600}
+.ig input,.ig select{width:100%;padding:12px 14px;border-radius:var(--rm);border:1px solid var(--bd);background:var(--bg);color:var(--tx);font-size:15px}
+.ig input:focus,.ig select:focus{border-color:var(--pr);box-shadow:0 0 0 3px var(--glow)}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.btn{width:100%;padding:13px;border:none;border-radius:var(--rm);background:var(--grad);color:#fff;font-weight:900;font-size:16px;cursor:pointer;margin-top:6px}
+.btn:disabled{opacity:.6}
+.sw{text-align:center;margin-top:16px;font-size:14px;color:var(--mu)}.sw a{color:var(--pr);cursor:pointer;font-weight:700}
+.al{padding:12px 16px;border-radius:var(--rm);font-size:14px;margin-bottom:14px;font-weight:600}
+.al.e{background:var(--dnbg);color:#F87171;border:1px solid rgba(239,68,68,.3)}
+.al.s{background:var(--okbg);color:#34D399;border:1px solid rgba(16,185,129,.3)}
+.sh{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:10px}
+.sh h2{font-size:25px;font-weight:900}.sh span{color:var(--mu);font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px}
+.lc{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:22px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--sh)}
+.num{width:40px;height:40px;border-radius:10px;background:var(--glow);color:var(--pr);display:flex;align-items:center;justify-content:center;font-weight:900;font-family:'Cairo'}
+.lc h3{font-size:18px}.mu{font-size:13px;color:var(--mu)}
+.st{font-size:13.5px;display:flex;align-items:center;gap:8px;color:var(--mu)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--mu)}.dot.on{background:var(--ok);box-shadow:0 0 10px var(--ok)}
+.la{margin-top:auto;padding:12px;border-radius:var(--rm);border:1px solid var(--pr);background:transparent;color:var(--pr);font-weight:800;cursor:pointer}
+.la.ok{background:var(--okbg);border-color:var(--ok);color:var(--ok)}.la.ex{background:var(--wnbg);border-color:var(--wn);color:var(--wn)}
+.hb{background:var(--card);border:1px solid var(--bd);padding:8px 14px;border-radius:var(--rm);cursor:pointer;color:var(--tx);font-weight:700}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(5px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+.ov.r{justify-content:flex-end;padding:0;align-items:stretch}
+.mb{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:28px;max-width:440px;width:100%}
+.dr{width:380px;max-width:100%;background:var(--card);padding:22px;overflow:auto;border-right:1px solid var(--bd)}
+.hi{background:var(--bg);border:1px solid var(--bd);padding:12px;border-radius:var(--rm);margin-bottom:10px}
+.vc{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);padding:22px;box-shadow:var(--sh)}
+.vr{position:relative;width:100%;padding-top:56.25%;border-radius:var(--rm);overflow:hidden;background:#000;margin-top:14px}
+.vr video{position:absolute;inset:0;width:100%;height:100%}
+.back{background:none;border:none;color:var(--mu);font-weight:700;cursor:pointer;margin-bottom:16px;font-size:14px}
+.dt{display:flex;gap:10px;margin-bottom:22px;border-bottom:1px solid var(--bd);padding-bottom:12px;flex-wrap:wrap}
+.dtb{padding:11px 22px;border:1px solid transparent;background:none;color:var(--mu);font-weight:800;cursor:pointer;border-radius:var(--rm)}
+.dtb.on{background:var(--glow);color:var(--pr);border-color:rgba(79,70,229,.3)}
+.tw{background:var(--card);border:1px solid var(--bd);border-radius:var(--rl);overflow:auto;box-shadow:var(--sh);margin-bottom:20px}
+table{width:100%;border-collapse:collapse;font-size:14px;text-align:right}
+th,td{padding:13px 16px;border-bottom:1px solid var(--bd);white-space:nowrap}
+th{color:var(--mu);background:var(--bg);font-size:13px}tr:last-child td{border-bottom:none}
+.pill{padding:4px 12px;border-radius:999px;font-size:12px;font-weight:800}
+.pill.student{background:var(--glow);color:var(--pr)}.pill.parent{background:var(--wnbg);color:var(--wn)}
+.add{background:var(--card);border:2px dashed var(--bd);border-radius:var(--rl);padding:22px;margin-bottom:22px}
+.sm{padding:7px 12px;border-radius:8px;border:1px solid var(--pr);background:var(--glow);color:var(--pr);font-size:13px;font-weight:700;cursor:pointer;margin-left:6px}
+.sm.d{border-color:var(--dn);background:var(--dnbg);color:#F87171}.sm.w{border-color:var(--wn);background:var(--wnbg);color:var(--wn)}
+.empty{text-align:center;padding:50px 20px;color:var(--mu)}
+.blk{text-align:center;padding:60px 20px;background:var(--dnbg);border:1px solid rgba(239,68,68,.3);border-radius:var(--rl)}.blk h2{color:var(--dn);margin-bottom:12px}
+textarea.cl{width:100%;height:140px;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:var(--rm);padding:10px;font-family:monospace;margin-top:10px}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<div id="app"></div>
+<div class="footer">COPY RIGHT FOR ENG.MM</div>
+
+<script>
+const sb = supabase.createClient(
+  "https://mvykincoeacnpxfnwhoy.supabase.co",
+  "sb_publishable_lW5ozoTMgENOU1ZEt8-Mzw_ygL2g-Cn",
+  { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'alkhabeer-auth' } }
+);
+const GRADES = ["الصف الأول الإعدادي","الصف الثاني الإعدادي","الصف الثالث الإعدادي","الصف الأول الثانوي","الصف الثاني الثانوي","الصف الثالث الثانوي"];
+// أي اسم مستخدم/رقم يتحول لإيميل داخلي ثابت (المستخدم مبيشوفوش) عشان Supabase يقبله
+function h53(str, seed) {
+  let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+  for (let i = 0; i < str.length; i++) { const c = str.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (h2 >>> 0).toString(16).padStart(8, '0') + (h1 >>> 0).toString(16).padStart(8, '0');
+}
+const toEmail = id => { const k = id.trim().toLowerCase(); return `khb${h53(k, 1)}${h53(k, 7)}@gmail.com`; };
+const DEVICE = (() => {
+  try { let d = localStorage.getItem('alkhabeer-device');
+    if (!d) { d = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now()); localStorage.setItem('alkhabeer-device', d); }
+    return d; } catch (e) { return 'tmp-' + Math.random(); }
+})();
+
+const S = { loading:true, teacherExists:true, user:null, view:'home', authMode:'login', authRole:'student', topTab:'student',
+  err:'', ok:'', lessonId:null, codeModal:null, codeErr:'', videoUrl:'', dashTab:'users', theme:'dark',
+  drawer:false, showCodes:null, profiles:[], devices:[], resets:[], lessons:[], unlocks:[], views:[], exams:[], codes:[] };
+
+const $ = id => document.getElementById(id);
+const esc = s => (s ?? '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = d => d ? new Date(d).toLocaleString('ar-EG') : '—';
+const render = () => { $('app').innerHTML = App(); };
+const set = o => { Object.assign(S, o); render(); };
+const lesson = id => S.lessons.find(l => l.id === id);
+const hasUnlock = (sid, lid) => S.unlocks.find(x => x.student_id === sid && x.lesson_id === lid);
+const examOf = (sid, lid) => S.exams.find(x => x.student_id === sid && x.lesson_id === lid);
+const studentOf = () => {
+  const u = S.user;
+  if (u.role !== 'parent') return u;
+  return S.profiles.find(p => p.role === 'student' && (p.parent_phone === u.phone || p.full_name === u.child_name)) || null;
+};
+
+/* ---------- تحميل البيانات (كلها من Supabase) ---------- */
+async function loadData() {
+  const q = t => sb.from(t).select('*');
+  const [p, l, u, v, e] = await Promise.all([
+    q('profiles'), q('lessons').order('sort_order').order('created_at'),
+    q('unlocks'), q('views').order('viewed_at', { ascending: false }), q('exams')
+  ]);
+  S.profiles = p.data || []; S.lessons = l.data || []; S.unlocks = u.data || [];
+  S.views = v.data || []; S.exams = e.data || [];
+  if (S.user.role === 'teacher') {
+    const [c, d, r] = await Promise.all([q('codes'), q('devices'), q('reset_requests')]);
+    S.codes = c.data || []; S.devices = d.data || []; S.resets = r.data || [];
+  }
+}
+
+async function loadAll() {
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      let p = null;
+      for (let i = 0; i < 2 && !p; i++) {
+        const r = await sb.from('profiles').select('*').eq('id', session.user.id).single();
+        p = r.data;
+      }
+      if (p) { try { await checkDevice(p); S.user = p; await loadData(); } catch (er) { S.err = er.message; } }
+      else S.err = 'تعذر تحميل بيانات حسابك، حدّث الصفحة أو سجّل الدخول تاني.';
+    }
+    if (!S.user) { const { data } = await sb.rpc('teacher_exists'); S.teacherExists = !!data; }
+  } catch (e) { console.error(e); }
+  S.loading = false; render();
+}
+
+/* ---------- حد الأجهزة (جهازين كحد أقصى) ---------- */
+async function checkDevice(p) {
+  if (p.role === 'teacher') return;
+  const { data, error } = await sb.rpc('register_device', { p_device: DEVICE });
+  if (error || data === 'limit') {
+    await sb.auth.signOut();
+    throw new Error(error ? 'تعذر التحقق من الجهاز، حاول تاني' : 'الحساب ده مسجل على جهازين بالفعل. تواصل مع المستر لو عايز تدخل من جهاز جديد.');
+  }
+}
+
+/* ---------- المصادقة ---------- */
+async function doLogin(id, pass, wantTeacher) {
+  const email = toEmail(id);
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) throw new Error('بيانات الدخول غير صحيحة');
+  const { data: p } = await sb.from('profiles').select('*').eq('id', data.user.id).single();
+  if (!p) { await sb.auth.signOut(); throw new Error('تعذر تحميل ملف المستخدم'); }
+  if (wantTeacher !== (p.role === 'teacher')) {
+    await sb.auth.signOut();
+    throw new Error(wantTeacher ? 'هذا الحساب ليس حساب المستر' : 'استخدم تبويب المستر للدخول');
+  }
+  await checkDevice(p);
+  S.user = p; S.view = 'home'; await loadData();
+}
+
+async function doSignup(f) {
+  if (!/^\d{8,15}$/.test(f.phone)) throw new Error('رقم الموبايل لازم أرقام فقط');
+  if (f.pass.length < 6) throw new Error('كلمة السر لازم 6 حروف/أرقام على الأقل');
+  const { data, error } = await sb.auth.signUp({ email: toEmail(f.phone), password: f.pass });
+  if (error) throw new Error(/registered/i.test(error.message) ? 'رقم الموبايل ده مسجل قبل كده' : error.message);
+  if (!data.session) throw new Error('فعّل تسجيل الدخول بدون تأكيد إيميل من إعدادات Supabase');
+  const row = { id: data.user.id, full_name: f.name, role: S.authRole, phone: f.phone };
+  if (S.authRole === 'student') { row.grade = f.grade; row.parent_phone = f.parentPhone; }
+  else { row.child_name = f.childName; row.child_grade = f.childGrade; }
+  const { error: e2 } = await sb.from('profiles').insert(row);
+  if (e2) { await sb.auth.signOut(); throw new Error('تعذر إنشاء الحساب: ' + e2.message); }
+  await checkDevice(row);
+  S.user = row; S.view = 'home'; await loadData();
+}
+
+async function doTeacherSignup(u, pass) {
+  if (u.length < 2) throw new Error('اسم المستخدم قصير');
+  if (pass.length < 6) throw new Error('كلمة السر لازم 6 حروف/أرقام على الأقل');
+  const { data, error } = await sb.auth.signUp({ email: toEmail(u), password: pass });
+  if (error) throw new Error(/registered/i.test(error.message) ? 'اسم المستخدم ده موجود قبل كده' : error.message);
+  if (!data.session) throw new Error('فعّل تسجيل الدخول بدون تأكيد إيميل من إعدادات Supabase');
+  const row = { id: data.user.id, full_name: 'الأستاذ عبد المنعم رجب', role: 'teacher', phone: u };
+  const { error: e2 } = await sb.from('profiles').insert(row);
+  if (e2) { await sb.auth.signOut(); throw new Error('تعذر إنشاء حساب المستر (غالباً موجود فعلاً): ' + e2.message); }
+  S.user = row; S.teacherExists = true; S.view = 'home'; await loadData();
+}
+
+async function handleStudentAuth(e) {
+  e.preventDefault();
+  const btn = e.target.querySelector('button[type=submit]'); btn.disabled = true;
+  const v = id => {
+    let x = ($(id)?.value || '').trim();
+    if (/phone/.test(id)) x = x.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[\s-]/g, '');
+    return x;
+  };
+  try {
+    if (S.authMode === 'login') await doLogin(v('f_phone'), $('f_pass').value, false);
+    else await doSignup({ name: v('f_name'), phone: v('f_phone'), pass: $('f_pass').value, grade: v('f_grade'),
+      parentPhone: v('f_parentphone'), childName: v('f_childname'), childGrade: v('f_childgrade') });
+    S.err = ''; S.ok = '';
+  } catch (er) { S.err = er.message; }
+  render();
+}
+
+async function handleTeacherAuth(e) {
+  e.preventDefault();
+  try {
+    const u = $('t_user').value.trim(), p = $('t_pass').value;
+    if (S.teacherExists) await doLogin(u, p, true); else await doTeacherSignup(u, p);
+    S.err = '';
+  }
+  catch (er) { S.err = er.message; }
+  render();
+}
+
+async function logout() {
+  await sb.auth.signOut();
+  Object.assign(S, { user:null, view:'home', err:'', ok:'', profiles:[], lessons:[], unlocks:[], views:[], exams:[], codes:[], drawer:false });
+  render();
+}
+
+const toggleTheme = () => { S.theme = S.theme === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', S.theme); render(); };
+const setTopTab = t => set({ topTab: t, err: '', ok: '' });
+const setAuthRole = r => set({ authRole: r, err: '' });
+const toggleAuthMode = () => set({ authMode: S.authMode === 'login' ? 'signup' : 'login', err: '', ok: '' });
+
+/* ---------- الطالب ---------- */
+const openCode = lid => set({ codeModal: lid, codeErr: '' });
+const closeCode = () => set({ codeModal: null });
+const openExam = lid => set({ lessonId: lid, view: 'exam' });
+const goHome = () => set({ view: 'home', lessonId: null });
+
+async function submitCode(e) {
+  e.preventDefault();
+  const code = $('c_code').value.trim();
+  const lid = S.codeModal;
+  const { data, error } = await sb.rpc('redeem_code', { p_code: code, p_lesson: lid });
+  if (error) return set({ codeErr: 'حصل خطأ، حاول تاني' });
+  if (data !== 'ok') return set({ codeErr: data === 'used' ? 'الكود ده مستخدم قبل كده' : 'الكود غير صحيح' });
+  await loadData(); S.codeModal = null;
+  openVideo(lid);
+}
+
+async function doneExam() {
+  const { error } = await sb.from('exams').upsert(
+    { student_id: S.user.id, lesson_id: S.lessonId, submitted: true }, { onConflict: 'student_id,lesson_id' });
+  if (error) return alert('حصل خطأ: ' + error.message);
+  await loadData(); set({ view: 'home', lessonId: null });
+}
+
+async function openVideo(lid) {
+  const l = lesson(lid);
+  if (!l || !hasUnlock(S.user.id, lid)) return;
+  let url = l.video_url || '';
+  const dm = url.match(/drive\.google\.com\/.*?(?:\/d\/|[?&]id=)([\w-]+)/);
+  if (dm) url = 'https://drive.google.com/file/d/' + dm[1] + '/preview';
+  else if (url && !/^https?:/i.test(url)) {
+    const { data } = await sb.storage.from('videos').createSignedUrl(url, 60 * 60 * 3);
+    url = data?.signedUrl || '';
+  }
+  await sb.from('views').insert({ student_id: S.user.id, lesson_id: lid });
+  await loadData();
+  set({ lessonId: lid, view: 'video', videoUrl: url });
+}
+
+const toggleDrawer = v => set({ drawer: v });
+
+/* ---------- المستر ---------- */
+async function sendReset(e) {
+  e.preventDefault();
+  const { error } = await sb.from('reset_requests').insert({ phone: $('r_phone').value.trim() });
+  S.err = error ? 'تعذر إرسال الطلب، حاول تاني' : '';
+  S.ok = error ? '' : 'تم إرسال طلبك. تواصل مع المستر وهيبعتلك كلمة السر الجديدة.';
+  render();
+}
+
+async function resetPass(id) {
+  const p = S.profiles.find(x => x.id === id);
+  const np = prompt('كلمة السر الجديدة لـ ' + p.full_name + ' (6 على الأقل):');
+  if (!np) return;
+  if (np.length < 6) return alert('كلمة السر قصيرة');
+  const { error } = await sb.rpc('admin_reset_password', { p_user: id, p_pass: np });
+  if (error) return alert('خطأ: ' + error.message);
+  await sb.from('reset_requests').delete().eq('phone', p.phone);
+  await loadData(); render();
+  alert('تم تغيير كلمة السر. سلّمها للطالب.');
+}
+
+async function clearDevices(id) {
+  if (!confirm('مسح كل أجهزة الحساب ده؟')) return;
+  const { error } = await sb.rpc('admin_clear_devices', { p_user: id });
+  if (error) return alert(error.message);
+  await loadData(); render();
+}
+
+async function addLesson(e) {
+  e.preventDefault();
+  const b = e.target.querySelector('button[type=submit]'); b.disabled = true; b.textContent = 'جاري الحفظ... (الرفع ممكن ياخد وقت)';
+  try {
+    let url = $('n_url').value.trim();
+    const f = $('n_file').files[0];
+    if (f) {
+      const ext = (f.name.split('.').pop() || 'mp4').replace(/\W/g, '');
+      const path = `${Date.now()}.${ext}`;
+      const { error } = await sb.storage.from('videos').upload(path, f);
+      if (error) throw error;
+      url = path;
+    }
+    if (!url) throw new Error('ارفع فيديو أو اكتب رابط');
+    const grade = $('n_grade').value;
+    const n = Math.min(500, Math.max(1, +$('n_count').value || 100));
+    const { data, error } = await sb.from('lessons').insert({
+      title: $('n_title').value.trim(), grade, video_url: url,
+      exam_url: $('n_exam').value.trim() || null,
+      sort_order: S.lessons.filter(l => l.grade === grade).length + 1
+    }).select().single();
+    if (error) throw error;
+    const codes = new Set();
+    while (codes.size < n) codes.add(String(10000000 + Math.floor(Math.random() * 90000000)));
+    const { error: e2 } = await sb.from('codes').insert([...codes].map(code => ({ code, lesson_id: data.id })));
+    if (e2) throw e2;
+    await loadData();
+  } catch (er) { alert('خطأ: ' + (er.message || er)); }
+  render();
+}
+
+async function delLesson(id) {
+  if (!confirm('متأكد من حذف الدرس وكل أكواده؟')) return;
+  const { error } = await sb.from('lessons').delete().eq('id', id);
+  if (error) alert(error.message);
+  await loadData(); render();
+}
+
+async function toggleBlock(id) {
+  const p = S.profiles.find(x => x.id === id);
+  await sb.from('profiles').update({ blocked: !p.blocked }).eq('id', id);
+  await loadData(); render();
+}
+
+async function setNote(id) {
+  const p = S.profiles.find(x => x.id === id);
+  const n = prompt('ملاحظة لولي الأمر عن الطالب:', p.teacher_note || '');
+  if (n === null) return;
+  await sb.from('profiles').update({ teacher_note: n }).eq('id', id);
+  await loadData(); render();
+}
+
+async function setScore(sid, lid) {
+  const x = examOf(sid, lid);
+  const sc = prompt('درجة الامتحان:', x?.score || '');
+  if (sc === null) return;
+  await sb.from('exams').upsert({ student_id: sid, lesson_id: lid, submitted: true, score: sc }, { onConflict: 'student_id,lesson_id' });
+  await loadData(); render();
+}
+
+/* ---------- الواجهات ---------- */
+function TopBar() {
+  const u = S.user;
+  return `<div class="topbar">
+    <div class="brand"><div class="logo">خ</div><div><div class="bt">منصة الخبير</div><div class="bs">الأستاذ عبد المنعم رجب • اللغة العربية</div></div></div>
+    <div class="acts">
+      ${u && u.role === 'student' ? `<button class="hb" onclick="toggleDrawer(true)">☰ سجل المشاهدة</button>` : ''}
+      <button class="ic" onclick="toggleTheme()">${S.theme === 'dark' ? '☀️' : '🌙'}</button>
+      ${u ? `<div class="badge">${u.role === 'teacher' ? '👨‍🏫' : u.role === 'student' ? '🎓' : '👪'} <b>${esc(u.full_name)}</b></div><button class="ghost" onclick="logout()">تسجيل خروج</button>` : ''}
+    </div></div>`;
+}
+
+function App() {
+  if (S.loading) return TopBar() + `<div class="container"><div class="empty">جاري تحميل المنصة... ⚡</div></div>`;
+  const u = S.user; let body;
+  if (!u) body = Landing();
+  else if (u.role === 'teacher') body = Teacher();
+  else {
+    const st = studentOf();
+    if (u.blocked || (st && st.blocked)) body = `<div class="blk"><h2>🚫 تم حظر الحساب مؤقتاً</h2><p>تواصل مع الأستاذ عبد المنعم رجب لمعرفة السبب وفك الحظر.</p></div>`;
+    else if (u.role === 'parent') body = Parent();
+    else if (S.view === 'video') body = VideoView();
+    else if (S.view === 'exam') body = ExamView();
+    else body = StudentHome();
+  }
+  return TopBar() + `<div class="container">${body}</div>` + (S.codeModal ? CodeModal() : '') + (S.drawer ? Drawer() : '');
+}
+
+function Landing() {
+  return `<div class="hero"><h1>مع الخبير العربي أسهل بكتير</h1><p>سجّل دخولك أو أنشئ حساب جديد للوصول لدروس الأستاذ عبد المنعم رجب</p></div>
+  <div class="auth"><div class="tabs">
+    <button class="tab ${S.topTab === 'student' ? 'on' : ''}" onclick="setTopTab('student')">طالب / ولي أمر</button>
+    <button class="tab ${S.topTab === 'teacher' ? 'on' : ''}" onclick="setTopTab('teacher')">المستر</button></div>
+    ${S.topTab === 'student' ? StudentAuth() : TeacherAuth()}</div>`;
+}
+
+const gradeOpts = id => `<select id="${id}">${GRADES.map(g => `<option>${esc(g)}</option>`).join('')}</select>`;
+
+function StudentAuth() {
+  if (S.authMode === 'forgot') return Forgot();
+  const login = S.authMode === 'login', st = S.authRole === 'student';
+  return `<div class="tabs">
+    <button class="tab ${st ? 'on' : ''}" onclick="setAuthRole('student')">🎓 طالب</button>
+    <button class="tab ${!st ? 'on' : ''}" onclick="setAuthRole('parent')">👪 ولي أمر</button></div>
+    ${S.err ? `<div class="al e">${esc(S.err)}</div>` : ''}
+    <form onsubmit="handleStudentAuth(event)">
+    ${login ? `
+      <div class="ig"><label>رقم الموبايل</label><input required id="f_phone" type="tel" placeholder="01xxxxxxxxx"></div>
+      <div class="ig"><label>كلمة السر</label><input required id="f_pass" type="password"></div>` : `
+      <div class="ig"><label>${st ? 'اسم الطالب' : 'اسم ولي الأمر'}</label><input required id="f_name"></div>
+      <div class="row"><div class="ig"><label>رقم الموبايل</label><input required id="f_phone" type="tel" placeholder="01xxxxxxxxx"></div>
+      <div class="ig"><label>كلمة السر</label><input required id="f_pass" type="password" minlength="6"></div></div>
+      ${st ? `<div class="ig"><label>الصف الدراسي</label>${gradeOpts('f_grade')}</div>
+        <div class="ig"><label>رقم موبايل ولي الأمر</label><input required id="f_parentphone" type="tel" placeholder="01xxxxxxxxx"></div>`
+      : `<div class="ig"><label>اسم الابن / الابنة (نفس اسم الطالب)</label><input required id="f_childname"></div>
+        <div class="ig"><label>صف الابن / الابنة</label>${gradeOpts('f_childgrade')}</div>`}`}
+    <button class="btn" type="submit">${login ? 'تسجيل الدخول' : 'إنشاء الحساب'}</button></form>
+    <div class="sw">${login ? 'مش معاك حساب؟' : 'عندك حساب فعلاً؟'} <a onclick="toggleAuthMode()">${login ? 'اعمل حساب جديد' : 'سجّل دخولك'}</a></div>
+    ${login ? `<div class="sw"><a onclick="set({authMode:'forgot',err:'',ok:''})">نسيت كلمة السر؟</a></div>` : ''}`;
+}
+
+function Forgot() {
+  return `${S.err ? `<div class="al e">${esc(S.err)}</div>` : ''}${S.ok ? `<div class="al s">${esc(S.ok)}</div>` : ''}
+  <p class="mu" style="margin-bottom:14px">اكتب رقم موبايلك وهيوصل طلب للمستر عشان يعيّنلك كلمة سر جديدة.</p>
+  <form onsubmit="sendReset(event)"><div class="ig"><label>رقم الموبايل</label><input required id="r_phone" type="tel" placeholder="01xxxxxxxxx"></div>
+  <button class="btn" type="submit">إرسال الطلب</button></form>
+  <div class="sw"><a onclick="set({authMode:'login',err:'',ok:''})">رجوع لتسجيل الدخول</a></div>`;
+}
+
+function TeacherAuth() {
+  const setup = !S.teacherExists;
+  return `${S.err ? `<div class="al e">${esc(S.err)}</div>` : ''}
+  ${setup ? `<div class="al s">أول مرة؟ اختار اسم مستخدم وكلمة سر لحساب المستر.</div>` : ''}
+  <form onsubmit="handleTeacherAuth(event)">
+    <div class="ig"><label>اسم المستخدم</label><input required id="t_user"></div>
+    <div class="ig"><label>كلمة السر</label><input required id="t_pass" type="password"></div>
+    <button class="btn" type="submit">${setup ? 'إنشاء حساب المستر' : 'تسجيل الدخول'}</button></form>`;
+}
+
+function StudentHome() {
+  const u = S.user;
+  const ls = S.lessons.filter(l => l.grade === u.grade);
+  return `<div class="sh"><h2>دروس ${esc(u.grade)}</h2><span>امتحن أولاً (لو وجد) ثم أدخل الكود لفتح الدرس</span></div>
+  ${!ls.length ? `<div class="empty">لا توجد دروس متاحة لهذا الصف حالياً.</div>` : `<div class="grid">${ls.map((l, i) => {
+    const un = !!hasUnlock(u.id, l.id);
+    const examDone = !l.exam_url || examOf(u.id, l.id)?.submitted;
+    let txt = '🔒 إدخال كود التفعيل', cls = '', click = `openCode('${l.id}')`;
+    if (un) { txt = '▶ مشاهدة الدرس الآن'; cls = 'ok'; click = `openVideo('${l.id}')`; }
+    else if (!examDone) { txt = '📝 ادخل الامتحان المطلوب أولاً'; cls = 'ex'; click = `openExam('${l.id}')`; }
+    return `<div class="lc"><div class="num">${i + 1}</div><h3>${esc(l.title)}</h3><div class="mu">${esc(l.grade)}</div>
+      <div class="st"><span class="dot ${un ? 'on' : ''}"></span>${un ? 'الدرس متاح للمشاهدة' : (!examDone ? 'مطلوب حل الامتحان أولاً' : 'جاهز لإدخال كود التفعيل')}</div>
+      <button class="la ${cls}" onclick="${click}">${txt}</button></div>`;
+  }).join('')}</div>`}`;
+}
+
+function CodeModal() {
+  const l = lesson(S.codeModal);
+  return `<div class="ov"><div class="mb"><h3 style="margin-bottom:6px">كود تفعيل الدرس</h3><p class="mu" style="margin-bottom:16px">${esc(l?.title)}</p>
+    ${S.codeErr ? `<div class="al e">${esc(S.codeErr)}</div>` : ''}
+    <form onsubmit="submitCode(event)"><div class="ig"><input required id="c_code" inputmode="numeric" placeholder="اكتب الكود هنا" autofocus></div>
+    <button class="btn" type="submit">تفعيل</button></form>
+    <button class="back" style="margin:14px 0 0" onclick="closeCode()">إلغاء</button></div></div>`;
+}
+
+function ExamView() {
+  const l = lesson(S.lessonId);
+  return `<button class="back" onclick="goHome()">← رجوع</button>
+  <div class="vc"><h2>📝 امتحان: ${esc(l?.title)}</h2>
+    <p class="mu" style="margin:12px 0 18px">افتح الامتحان وحله، وبعدين ارجع واضغط "خلصت الامتحان".</p>
+    <a href="${esc(l?.exam_url)}" target="_blank" rel="noopener"><button class="btn" type="button">فتح الامتحان</button></a>
+    <button class="la ok" style="width:100%;margin-top:12px" onclick="doneExam()">✔ خلصت الامتحان</button></div>`;
+}
+
+function VideoView() {
+  const l = lesson(S.lessonId);
+  return `<button class="back" onclick="goHome()">← رجوع للدروس</button>
+  <div class="vc"><h2>${esc(l?.title)}</h2><div class="mu">${esc(l?.grade)}</div>
+  <div class="vr">
+    ${S.videoUrl.includes('drive.google.com')
+      ? `<iframe src="${esc(S.videoUrl)}" sandbox="allow-scripts allow-same-origin" allow="autoplay; fullscreen" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe>
+         <div style="position:absolute;top:0;right:0;width:80px;height:64px"></div>`
+      : `<video src="${esc(S.videoUrl)}" controls controlsList="nodownload" disablePictureInPicture oncontextmenu="return false"></video>`}
+    <div style="position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.22);font-size:clamp(14px,3vw,26px);font-weight:700;transform:rotate(-20deg);text-align:center">${esc(S.user.full_name)} • ${esc(S.user.phone)}</div>
+  </div></div>`;
+}
+
+function Drawer() {
+  const mine = S.views.filter(v => v.student_id === S.user.id);
+  return `<div class="ov r" onclick="if(event.target===this)toggleDrawer(false)"><div class="dr">
+    <div class="sh"><h3>سجل المشاهدة</h3><button class="ghost" onclick="toggleDrawer(false)">✕</button></div>
+    ${!mine.length ? `<div class="empty">لا توجد مشاهدات بعد.</div>` : mine.map(v => `<div class="hi"><b>${esc(lesson(v.lesson_id)?.title || 'درس محذوف')}</b><div class="mu">${fmt(v.viewed_at)}</div></div>`).join('')}
+  </div></div>`;
+}
+
+function Parent() {
+  const st = studentOf();
+  if (!st) return `<div class="empty">لم يتم ربط حسابك بحساب طالب بعد. تأكد إن الطالب سجّل برقم موبايلك كولي أمر.</div>`;
+  const ls = S.lessons.filter(l => l.grade === st.grade);
+  return `<div class="sh"><h2>👨‍👩‍👦 متابعة الطالب: ${esc(st.full_name)}</h2><span>${esc(st.grade)}</span></div>
+  <div class="vc" style="margin-bottom:22px"><h3 style="color:var(--pr);font-size:16px;margin-bottom:8px">📌 ملاحظات الأستاذ:</h3>
+  <p style="font-weight:600">${esc(st.teacher_note || 'لا توجد ملاحظات حالياً من المستر.')}</p></div>
+  <div class="tw"><table><thead><tr><th>#</th><th>الدرس</th><th>فتح الحصة</th><th>وقت الفتح</th><th>آخر مشاهدة</th><th>درجة الامتحان</th></tr></thead><tbody>
+  ${!ls.length ? `<tr><td colspan="6" class="empty">لا توجد دروس.</td></tr>` : ls.map((l, i) => {
+    const un = hasUnlock(st.id, l.id), ex = examOf(st.id, l.id);
+    const last = S.views.find(v => v.student_id === st.id && v.lesson_id === l.id);
+    return `<tr><td>${i + 1}</td><td>${esc(l.title)}</td><td>${un ? '✅ مفتوحة' : '🔒 مغلقة'}</td><td>${fmt(un?.unlocked_at)}</td><td>${fmt(last?.viewed_at)}</td>
+    <td>${!l.exam_url ? 'لا يوجد' : ex?.score ? esc(ex.score) : (ex?.submitted ? 'تم الحل - بانتظار الدرجة' : 'لم يحل')}</td></tr>`;
+  }).join('')}</tbody></table></div>`;
+}
+
+function Teacher() {
+  const T = (k, t) => `<button class="dtb ${S.dashTab === k ? 'on' : ''}" onclick="set({dashTab:'${k}'})">${t}</button>`;
+  const people = S.profiles.filter(p => p.role !== 'teacher');
+  let body = '';
+  if (S.dashTab === 'users') {
+    body = (S.resets.length ? `<div class="al e">🔑 ${S.resets.length} طلب إعادة كلمة سر: ${[...new Set(S.resets.map(r => esc(r.phone)))].join('، ')}</div>` : '') + `<div class="tw"><table><thead><tr><th>الاسم</th><th>النوع</th><th>الموبايل</th><th>الصف</th><th>موبايل ولي الأمر / الابن</th><th>دروس مفتوحة</th><th>الأجهزة</th><th>إجراءات</th></tr></thead><tbody>
+    ${!people.length ? `<tr><td colspan="7" class="empty">لا توجد حسابات.</td></tr>` : people.map(p => `<tr>
+      <td>${esc(p.full_name)}${p.blocked ? ' 🚫' : ''}${S.resets.some(r => r.phone === p.phone) ? ' 🔑' : ''}</td>
+      <td><span class="pill ${p.role}">${p.role === 'student' ? 'طالب' : 'ولي أمر'}</span></td>
+      <td dir="ltr">${esc(p.phone)}</td><td>${esc(p.grade || p.child_grade)}</td>
+      <td>${esc(p.role === 'student' ? p.parent_phone : p.child_name)}</td>
+      <td>${p.role === 'student' ? S.unlocks.filter(u => u.student_id === p.id).length : '—'}</td>
+      <td>${S.devices.filter(d => d.user_id === p.id).length}/2</td>
+      <td>${p.role === 'student' ? `<button class="sm w" onclick="setNote('${p.id}')">ملاحظة</button>` : ''}
+      <button class="sm" onclick="resetPass('${p.id}')">🔑 كلمة سر</button><button class="sm w" onclick="clearDevices('${p.id}')">مسح الأجهزة</button>
+      <button class="sm d" onclick="toggleBlock('${p.id}')">${p.blocked ? 'فك الحظر' : 'حظر'}</button></td></tr>`).join('')}
+    </tbody></table></div>`;
+  } else if (S.dashTab === 'lessons') {
+    body = `<form class="add" onsubmit="addLesson(event)"><h3 style="margin-bottom:14px">➕ إضافة درس</h3>
+      <div class="row"><div class="ig"><label>عنوان الدرس</label><input required id="n_title"></div>
+      <div class="ig"><label>الصف</label>${gradeOpts('n_grade')}</div></div>
+      <div class="row"><div class="ig"><label>رفع فيديو</label><input type="file" id="n_file" accept="video/*"></div>
+      <div class="ig"><label>رابط Google Drive (أو mp4 مباشر)</label><input id="n_url" dir="ltr" placeholder="https://drive.google.com/file/d/..."></div></div>
+      <div class="row"><div class="ig"><label>رابط امتحان جوجل فورم (اختياري)</label><input id="n_exam" dir="ltr"></div>
+      <div class="ig"><label>عدد الأكواد</label><input type="number" id="n_count" value="100" min="1" max="500"></div></div>
+      <button class="btn" type="submit">حفظ الدرس وتوليد الأكواد</button></form>
+      ${S.lessons.map(l => {
+        const cs = S.codes.filter(c => c.lesson_id === l.id), free = cs.filter(c => !c.used_by);
+        return `<div class="lc" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div><h3>${esc(l.title)}</h3><div class="mu">${esc(l.grade)} • الأكواد: ${free.length} متاح / ${cs.length - free.length} مستخدم</div></div>
+        <div><button class="sm" onclick="set({showCodes:S.showCodes==='${l.id}'?null:'${l.id}'})">الأكواد</button>
+        <button class="sm d" onclick="delLesson('${l.id}')">حذف</button></div></div>
+        ${S.showCodes === l.id ? `<textarea class="cl" readonly>${free.map(c => c.code).join('\n')}</textarea>` : ''}</div>`;
+      }).join('') || '<div class="empty">لا توجد دروس.</div>'}`;
+  } else {
+    body = `<div class="tw"><table><thead><tr><th>الطالب</th><th>الدرس</th><th>الحالة</th><th>الدرجة</th><th></th></tr></thead><tbody>
+    ${!S.exams.length ? `<tr><td colspan="5" class="empty">لا توجد امتحانات مسلّمة.</td></tr>` : S.exams.map(x => `<tr>
+      <td>${esc(S.profiles.find(p => p.id === x.student_id)?.full_name)}</td><td>${esc(lesson(x.lesson_id)?.title)}</td>
+      <td>${x.submitted ? 'تم الحل' : '—'}</td><td>${esc(x.score || '—')}</td>
+      <td><button class="sm" onclick="setScore('${x.student_id}','${x.lesson_id}')">إدخال الدرجة</button></td></tr>`).join('')}
+    </tbody></table></div>`;
+  }
+  return `<div class="sh"><h2>لوحة المستر</h2><span>${people.length} حساب مسجل</span></div>
+  <div class="dt">${T('users', '👥 الحسابات')}${T('lessons', '🎬 الدروس والأكواد')}${T('exams', '📝 الامتحانات')}</div>${body}`;
+}
+
+loadAll();
+</script>
+</body>
+</html>
