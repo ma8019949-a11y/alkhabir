@@ -221,6 +221,15 @@ textarea.cl{width:100%;height:140px;background:var(--glow);color:var(--tx);borde
 
 @media(max-width:600px){.container{padding:18px 8px 40px}.vc{padding:12px;border-radius:16px}.topbar{padding:10px 12px}.auth{padding:20px}.cg{grid-template-columns:repeat(2,1fr)}}
 
+/* أكتر من فيديو في الدرس */
+.vtabs{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.vtab{flex:1;min-width:120px;padding:12px 18px;border-radius:var(--rm);border:1px solid var(--bd);background:var(--glow);color:var(--mu);font-weight:800;font-size:15px;cursor:pointer}
+.vtab:hover{color:var(--tx);border-color:var(--bdh)}
+.vtab.on{background:var(--grad);color:#fff;border-color:transparent;box-shadow:0 8px 18px -8px rgba(124,58,237,.9)}
+.vpart{border:1px dashed var(--bd);border-radius:var(--rm);padding:14px 14px 4px;margin-bottom:14px}
+.vpart h4{font-family:'Cairo',sans-serif;margin-bottom:12px;font-size:15px}
+.vpart h4 small{color:var(--mu);font-weight:500;font-size:12px}
+
 /* أزرار الفيديو */
 .fsx{display:none}
 .vr.full .fsx,.vr:fullscreen .fsx{display:block}
@@ -493,19 +502,38 @@ async function doneExam() {
   await loadData(); set({ view: 'home', lessonId: null });
 }
 
+/* ---------- أكتر من فيديو في الدرس (شرح + حل) ---------- */
+// بيتخزن في نفس عمود video_url: نص عادي (فيديو واحد) أو JSON للأكتر من فيديو — مفيش تغيير في قاعدة البيانات
+const parseVideos = v => {
+  v = (v || '').trim();
+  if (v.startsWith('[')) {
+    try {
+      const a = JSON.parse(v);
+      if (Array.isArray(a) && a.length) return a.filter(x => x && x.u).map((x, i) => ({ t: x.t || ('الجزء ' + (i + 1)), u: x.u }));
+    } catch (e) {}
+  }
+  return v ? [{ t: '', u: v }] : [];
+};
+const resolveVideo = async u => {
+  const dm = (u || '').match(/drive\.google\.com\/.*?(?:\/d\/|[?&]id=)([\w-]+)/);
+  if (dm) return 'https://drive.google.com/file/d/' + dm[1] + '/preview';
+  if (u && !/^https?:/i.test(u)) {
+    const { data } = await sb.storage.from('videos').createSignedUrl(u, 60 * 60 * 3);
+    return data?.signedUrl || '';
+  }
+  return u || '';
+};
+S.videos = []; S.vi = 0;
+const setVideo = i => set({ vi: i, videoUrl: S.videos[i]?.url || '' });
+
 async function openVideo(lid) {
   const l = lesson(lid);
   if (!l || !hasUnlock(S.user.id, lid)) return;
-  let url = l.video_url || '';
-  const dm = url.match(/drive\.google\.com\/.*?(?:\/d\/|[?&]id=)([\w-]+)/);
-  if (dm) url = 'https://drive.google.com/file/d/' + dm[1] + '/preview';
-  else if (url && !/^https?:/i.test(url)) {
-    const { data } = await sb.storage.from('videos').createSignedUrl(url, 60 * 60 * 3);
-    url = data?.signedUrl || '';
-  }
+  const parts = parseVideos(l.video_url);
+  const vids = await Promise.all(parts.map(async p => ({ t: p.t, url: await resolveVideo(p.u) })));
   await sb.from('views').insert({ student_id: S.user.id, lesson_id: lid });
   await loadData();
-  set({ lessonId: lid, view: 'video', videoUrl: url });
+  set({ lessonId: lid, view: 'video', videos: vids, vi: 0, videoUrl: vids[0]?.url || '' });
 }
 
 const toggleDrawer = v => set({ drawer: v });
@@ -542,16 +570,23 @@ async function addLesson(e) {
   e.preventDefault();
   const b = e.target.querySelector('button[type=submit]'); b.disabled = true; b.textContent = 'جاري الحفظ... (الرفع ممكن ياخد وقت)';
   try {
-    let url = $('n_url').value.trim();
-    const f = $('n_file').files[0];
-    if (f) {
-      const ext = (f.name.split('.').pop() || 'mp4').replace(/\W/g, '');
-      const path = `${Date.now()}.${ext}`;
-      const { error } = await sb.storage.from('videos').upload(path, f);
-      if (error) throw error;
-      url = path;
-    }
-    if (!url) throw new Error('ارفع فيديو أو اكتب رابط');
+    const part = async (fileId, urlId, tag) => {
+      let u = $(urlId).value.trim();
+      const f = $(fileId).files[0];
+      if (f) {
+        const ext = (f.name.split('.').pop() || 'mp4').replace(/\W/g, '');
+        const path = `${Date.now()}_${tag}.${ext}`;
+        const { error } = await sb.storage.from('videos').upload(path, f);
+        if (error) throw error;
+        u = path;
+      }
+      return u;
+    };
+    const u1 = await part('n_file', 'n_url', 1);
+    if (!u1) throw new Error('ارفع الفيديو الأول أو اكتب رابطه');
+    const u2 = await part('n_file2', 'n_url2', 2);
+    let url = u1;
+    if (u2) url = JSON.stringify([{ t: $('n_lbl1').value.trim() || 'الشرح', u: u1 }, { t: $('n_lbl2').value.trim() || 'الحل', u: u2 }]);
     const grade = $('n_grade').value;
     const n = Math.min(500, Math.max(1, +$('n_count').value || 100));
     const { data, error } = await sb.from('lessons').insert({
@@ -687,7 +722,7 @@ function StudentHome() {
     let txt = '🔒 إدخال كود التفعيل', cls = '', click = `openCode('${l.id}')`;
     if (un) { txt = '▶ مشاهدة الدرس الآن'; cls = 'ok'; click = `openVideo('${l.id}')`; }
     else if (!examDone) { txt = '📝 ادخل الامتحان المطلوب أولاً'; cls = 'ex'; click = `openExam('${l.id}')`; }
-    return `<div class="lc"><div class="num">${i + 1}</div><h3>${esc(l.title)}</h3><div class="mu">${esc(l.grade)}</div>
+    return `<div class="lc"><div class="num">${i + 1}</div><h3>${esc(l.title)}</h3><div class="mu">${esc(l.grade)}${parseVideos(l.video_url).length > 1 ? ' • 🎬 ' + parseVideos(l.video_url).map(p => esc(p.t)).join(' + ') : ''}</div>
       <div class="st"><span class="dot ${un ? 'on' : ''}"></span>${un ? 'الدرس متاح للمشاهدة' : (!examDone ? 'مطلوب حل الامتحان أولاً' : 'جاهز لإدخال كود التفعيل')}</div>
       <button class="la ${cls}" onclick="${click}">${txt}</button></div>`;
   }).join('')}</div>`}`;
@@ -713,13 +748,15 @@ function ExamView() {
 
 function VideoView() {
   const l = lesson(S.lessonId);
+  const vu = S.videos?.[S.vi]?.url ?? S.videoUrl;
   return `<button class="back" onclick="goHome()">← رجوع للدروس</button>
   <div class="vc"><h2>${esc(l?.title)}</h2><div class="mu">${esc(l?.grade)}</div>
+  ${S.videos.length > 1 ? `<div class="vtabs">${S.videos.map((v, i) => `<button class="vtab ${i === S.vi ? 'on' : ''}" onclick="setVideo(${i})">${i === S.vi ? '▶ ' : ''}${esc(v.t)}</button>`).join('')}</div>` : ''}
   <div class="vr" id="vbox"><button class="fsb fsx" onclick="fsVideo()">✕ خروج</button>
-    ${S.videoUrl.includes('drive.google.com')
-      ? `<iframe src="${esc(S.videoUrl)}" allow="autoplay; fullscreen; encrypted-media" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe>
+    ${vu.includes('drive.google.com')
+      ? `<iframe src="${esc(vu)}" allow="autoplay; fullscreen; encrypted-media" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe>
          <div style="position:absolute;top:0;right:0;width:96px;height:88px;z-index:2"></div>`
-      : `<video src="${esc(S.videoUrl)}" controls controlsList="nodownload" disablePictureInPicture oncontextmenu="return false"></video>`}
+      : `<video src="${esc(vu)}" controls controlsList="nodownload" disablePictureInPicture oncontextmenu="return false"></video>`}
     <div style="position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.22);font-size:clamp(14px,3vw,26px);font-weight:700;transform:rotate(-20deg);text-align:center">${esc(S.user.full_name)} • ${esc(S.user.phone)}</div>
   </div>
   <div class="vbar"><button class="fsb2" onclick="fsVideo()">⛶ ملء الشاشة</button></div></div>`;
@@ -781,15 +818,21 @@ function Teacher() {
     body = `<form class="add" onsubmit="addLesson(event)"><h3 style="margin-bottom:14px">➕ إضافة درس</h3>
       <div class="row"><div class="ig"><label>عنوان الدرس</label><input required id="n_title"></div>
       <div class="ig"><label>الصف</label>${gradeOpts('n_grade')}</div></div>
+      <div class="vpart"><h4>🎬 الفيديو الأول</h4>
+      <div class="ig"><label>اسم الفيديو (يظهر للطالب)</label><input id="n_lbl1" placeholder="الشرح"></div>
       <div class="row"><div class="ig"><label>رفع فيديو</label><input type="file" id="n_file" accept="video/*"></div>
-      <div class="ig"><label>رابط Google Drive (أو mp4 مباشر)</label><input id="n_url" dir="ltr" placeholder="https://drive.google.com/file/d/..."></div></div>
+      <div class="ig"><label>أو رابط Google Drive / mp4 مباشر</label><input id="n_url" dir="ltr" placeholder="https://drive.google.com/file/d/..."></div></div></div>
+      <div class="vpart"><h4>🎬 فيديو تاني <small>(اختياري — مثلاً حل الأسئلة، بيتفتح بنفس الكود)</small></h4>
+      <div class="ig"><label>اسم الفيديو (يظهر للطالب)</label><input id="n_lbl2" placeholder="الحل"></div>
+      <div class="row"><div class="ig"><label>رفع فيديو</label><input type="file" id="n_file2" accept="video/*"></div>
+      <div class="ig"><label>أو رابط Google Drive / mp4 مباشر</label><input id="n_url2" dir="ltr" placeholder="https://drive.google.com/file/d/..."></div></div></div>
       <div class="row"><div class="ig"><label>رابط امتحان جوجل فورم (اختياري)</label><input id="n_exam" dir="ltr"></div>
       <div class="ig"><label>عدد الأكواد</label><input type="number" id="n_count" value="100" min="1" max="500"></div></div>
       <button class="btn" type="submit">حفظ الدرس وتوليد الأكواد</button></form>
       ${S.lessons.map(l => {
         const cs = S.codes.filter(c => c.lesson_id === l.id), free = cs.filter(c => !c.used_by);
         return `<div class="lc" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <div><h3>${esc(l.title)}</h3><div class="mu">${esc(l.grade)} • الأكواد: ${free.length} متاح / ${cs.length - free.length} مستخدم</div></div>
+        <div><h3>${esc(l.title)}</h3><div class="mu">${esc(l.grade)}${parseVideos(l.video_url).length > 1 ? ' • 🎬 ' + parseVideos(l.video_url).length + ' فيديوهات' : ''} • الأكواد: ${free.length} متاح / ${cs.length - free.length} مستخدم</div></div>
         <div><button class="sm" onclick="set({showCodes:S.showCodes==='${l.id}'?null:'${l.id}'})">الأكواد</button>
         <button class="sm w" onclick="set({printLesson:'${l.id}'})">📄 PDF</button>
         <button class="sm d" onclick="delLesson('${l.id}')">حذف</button></div></div>
