@@ -231,6 +231,24 @@ textarea.cl{width:100%;height:140px;background:var(--glow);color:var(--tx);borde
 
 @media(max-width:600px){.container{padding:18px 8px 40px}.vc{padding:12px;border-radius:16px}.topbar{padding:10px 12px}.auth{padding:20px}.cg{grid-template-columns:repeat(2,1fr)}}
 
+/* ملاحظة نسيت كلمة السر + بحث الحسابات */
+.note{background:var(--wnbg);border:1px solid rgba(245,158,11,.4);color:var(--wn);border-radius:var(--rm);padding:12px 14px;font-size:14px;line-height:1.8;margin-bottom:16px;font-weight:600}
+.note b{color:var(--tx)}
+.srch{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.srch input{flex:1;min-width:220px;padding:13px 16px;border-radius:var(--rm);border:1px solid var(--bd);background:var(--card);color:var(--tx);font-size:15px;transition:border-color .25s,box-shadow .25s}
+.srch input:focus{border-color:var(--pr2);box-shadow:0 0 0 4px var(--glow)}
+.srch input::placeholder{color:var(--mu)}
+
+/* طلبات تغيير كلمة السر */
+.rq{background:var(--card);border:1px solid var(--wn);border-radius:var(--rl);padding:18px 20px;margin-bottom:20px;box-shadow:var(--sh);animation:cardIn .5s var(--ease) both}
+.rq h3{font-size:16px;margin-bottom:12px;color:var(--wn)}
+.rqr{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--bd)}
+.rqr:first-of-type{border-top:none}
+.rqi{display:flex;flex-direction:column;min-width:150px;flex:1}
+.rqi b{font-size:16px;letter-spacing:.5px}
+.rqp{padding:10px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--glow);color:var(--tx);font-size:14px;min-width:180px;transition:border-color .25s,box-shadow .25s}
+.rqp:focus{border-color:var(--pr2);box-shadow:0 0 0 3px var(--glow)}
+
 /* أكتر من فيديو في الدرس */
 .vtabs{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
 .vtab{flex:1;min-width:120px;padding:12px 18px;border-radius:var(--rm);border:1px solid var(--bd);background:var(--glow);color:var(--mu);font-weight:800;font-size:15px;cursor:pointer}
@@ -551,10 +569,43 @@ const toggleDrawer = v => set({ drawer: v });
 /* ---------- المستر ---------- */
 async function sendReset(e) {
   e.preventDefault();
-  const { error } = await sb.from('reset_requests').insert({ phone: $('r_phone').value.trim() });
+  const { error } = await sb.from('reset_requests').insert({ phone: $('r_phone').value.trim().replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[\s-]/g, '') });
   S.err = error ? 'تعذر إرسال الطلب، حاول تاني' : '';
   S.ok = error ? '' : 'تم إرسال طلبك. تواصل مع المستر وهيبعتلك كلمة السر الجديدة.';
   render();
+}
+
+/* ---------- بحث في جدول الحسابات (من غير ما الصفحة تتعاد رسمها) ---------- */
+const nz = s => (s ?? '').toString().toLowerCase()
+  .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[\s-]+/g, ' ').trim();
+const hitQ = (txt, q) => nz(q).split(' ').filter(Boolean).every(t => txt.includes(t));
+const userText = p => nz([p.full_name, p.phone, p.parent_phone, p.child_name, p.grade, p.child_grade].filter(Boolean).join(' '));
+function filterUsers(v) {
+  S.q = v;
+  let n = 0;
+  document.querySelectorAll('#utb tr[data-s]').forEach(tr => { const ok = hitQ(tr.dataset.s, v); tr.style.display = ok ? '' : 'none'; if (ok) n++; });
+  const nr = $('u_none'); if (nr) nr.style.display = n ? 'none' : '';
+  const c = $('u_n'); if (c) c.textContent = n + ' من ' + document.querySelectorAll('#utb tr[data-s]').length;
+}
+
+/* ---------- تغيير كلمة السر من جنب الرقم الطالب ---------- */
+async function resetByReq(i) {
+  const phone = S.reqList?.[i];
+  const np = ($('rp_' + i)?.value || '').trim();
+  if (np.length < 6) return alert('كلمة السر لازم 6 حروف/أرقام على الأقل');
+  const p = S.profiles.find(x => x.phone === phone);
+  if (!p) return alert('مفيش حساب مسجل بالرقم ده');
+  const { error } = await sb.rpc('admin_reset_password', { p_user: p.id, p_pass: np });
+  if (error) return alert('خطأ: ' + error.message);
+  await sb.from('reset_requests').delete().eq('phone', phone);
+  await loadData(); render();
+  alert('تم تغيير كلمة السر لـ ' + p.full_name + '.\nسلّمها له: ' + np);
+}
+async function dropReq(i) {
+  const phone = S.reqList?.[i];
+  if (!phone) return;
+  await sb.from('reset_requests').delete().eq('phone', phone);
+  await loadData(); render();
 }
 
 async function resetPass(id) {
@@ -739,8 +790,9 @@ function StudentAuth() {
 
 function Forgot() {
   return `${S.err ? `<div class="al e">${esc(S.err)}</div>` : ''}${S.ok ? `<div class="al s">${esc(S.ok)}</div>` : ''}
-  <p class="mu" style="margin-bottom:14px">اكتب رقم موبايلك وهيوصل طلب للمستر عشان يعيّنلك كلمة سر جديدة.</p>
-  <form onsubmit="sendReset(event)"><div class="ig"><label>رقم الموبايل</label><input required id="r_phone" type="tel" placeholder="01xxxxxxxxx"></div>
+  <p class="mu" style="margin-bottom:12px">اكتب رقم موبايلك وهيوصل طلب للمستر عشان يعيّنلك كلمة سر جديدة.</p>
+  <div class="note">⚠️ لازم تكتب <b>نفس رقم الموبايل اللي سجّلت بيه في المنصة بالظبط</b>. لو كتبت رقم تاني، المستر مش هيلاقي حسابك ومش هيعرف يغيّر كلمة السر.</div>
+  <form onsubmit="sendReset(event)"><div class="ig"><label>رقم الموبايل المسجّل في المنصة</label><input required id="r_phone" type="tel" placeholder="الرقم اللي سجّلت بيه (01xxxxxxxxx)"></div>
   <button class="btn" type="submit">إرسال الطلب</button></form>
   <div class="sw"><a onclick="set({authMode:'login',err:'',ok:''})">رجوع لتسجيل الدخول</a></div>`;
 }
@@ -843,10 +895,17 @@ function Parent() {
 function Teacher() {
   const T = (k, t) => `<button class="dtb ${S.dashTab === k ? 'on' : ''}" onclick="set({dashTab:'${k}'})">${t}</button>`;
   const people = S.profiles.filter(p => p.role !== 'teacher');
+  const reqs = [...new Set(S.resets.map(r => r.phone))]; S.reqList = reqs;
+  const reqBox = reqs.length ? `<div class="rq"><h3>🔑 طلبات تغيير كلمة السر (${reqs.length})</h3>${reqs.map((ph, i) => {
+    const p = S.profiles.find(x => x.phone === ph);
+    return `<div class="rqr"><div class="rqi"><b dir="ltr">${esc(ph)}</b><span class="mu">${p ? esc(p.full_name) : '⚠️ مفيش حساب بالرقم ده'}</span></div>
+      ${p ? `<input id="rp_${i}" class="rqp" placeholder="كلمة السر الجديدة" dir="ltr" autocomplete="off"><button class="sm" onclick="resetByReq(${i})">✔ تغيير</button>` : ''}
+      <button class="sm d" onclick="dropReq(${i})">تجاهل</button></div>`;
+  }).join('')}</div>` : '';
   let body = '';
   if (S.dashTab === 'users') {
-    body = (S.resets.length ? `<div class="al e">🔑 ${S.resets.length} طلب إعادة كلمة سر: ${[...new Set(S.resets.map(r => esc(r.phone)))].join('، ')}</div>` : '') + `<div class="tw"><table><thead><tr><th>الاسم</th><th>النوع</th><th>الموبايل</th><th>الصف</th><th>موبايل ولي الأمر / الابن</th><th>دروس مفتوحة</th><th>الأجهزة</th><th>إجراءات</th></tr></thead><tbody>
-    ${!people.length ? `<tr><td colspan="7" class="empty">لا توجد حسابات.</td></tr>` : people.map(p => `<tr>
+    body = reqBox + `<div class="srch"><input id="u_q" type="search" autocomplete="off" placeholder="🔍 ابحث بالاسم أو رقم الموبايل أو الصف..." value="${esc(S.q || '')}" oninput="filterUsers(this.value)"><span class="mu" id="u_n">${people.filter(p => hitQ(userText(p), S.q || '')).length} من ${people.length}</span></div><div class="tw"><table><thead><tr><th>الاسم</th><th>النوع</th><th>الموبايل</th><th>الصف</th><th>موبايل ولي الأمر / الابن</th><th>دروس مفتوحة</th><th>الأجهزة</th><th>إجراءات</th></tr></thead><tbody id="utb">
+    ${!people.length ? `<tr><td colspan="7" class="empty">لا توجد حسابات.</td></tr>` : people.map(p => `<tr data-s="${esc(userText(p))}"${hitQ(userText(p), S.q || '') ? '' : ' style="display:none"'}>
       <td>${esc(p.full_name)}${p.blocked ? ' 🚫' : ''}${S.resets.some(r => r.phone === p.phone) ? ' 🔑' : ''}</td>
       <td><span class="pill ${p.role}">${p.role === 'student' ? 'طالب' : 'ولي أمر'}</span></td>
       <td dir="ltr">${esc(p.phone)}</td><td>${esc(p.grade || p.child_grade)}</td>
@@ -855,7 +914,7 @@ function Teacher() {
       <td>${S.devices.filter(d => d.user_id === p.id).length}/2</td>
       <td>${p.role === 'student' ? `<button class="sm w" onclick="setNote('${p.id}')">ملاحظة</button>` : ''}
       <button class="sm" onclick="resetPass('${p.id}')">🔑 كلمة سر</button><button class="sm w" onclick="clearDevices('${p.id}')">مسح الأجهزة</button>
-      <button class="sm d" onclick="toggleBlock('${p.id}')">${p.blocked ? 'فك الحظر' : 'حظر'}</button></td></tr>`).join('')}
+      <button class="sm d" onclick="toggleBlock('${p.id}')">${p.blocked ? 'فك الحظر' : 'حظر'}</button></td></tr>`).join('') + `<tr id="u_none" style="display:none"><td colspan="8" class="empty">مفيش نتايج للبحث ده.</td></tr>`}
     </tbody></table></div>`;
   } else if (S.dashTab === 'lessons') {
     body = `<form class="add" onsubmit="addLesson(event)"><h3 style="margin-bottom:14px">➕ إضافة درس</h3>
