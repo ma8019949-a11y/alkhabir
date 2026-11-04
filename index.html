@@ -246,6 +246,8 @@ textarea.cl{width:100%;height:140px;background:var(--glow);color:var(--tx);borde
 .rqr:first-of-type{border-top:none}
 .rqi{display:flex;flex-direction:column;min-width:150px;flex:1}
 .rqi b{font-size:16px;letter-spacing:.5px}
+.rqa{display:flex;flex-direction:column;gap:2px}
+.rqa code{font-family:monospace;font-size:16px;background:var(--glow);border:1px solid var(--bd);border-radius:8px;padding:5px 12px;letter-spacing:.5px;word-break:break-all}
 .rqp{padding:10px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--glow);color:var(--tx);font-size:14px;min-width:180px;transition:border-color .25s,box-shadow .25s}
 .rqp:focus{border-color:var(--pr2);box-shadow:0 0 0 3px var(--glow)}
 
@@ -569,9 +571,17 @@ const toggleDrawer = v => set({ drawer: v });
 /* ---------- المستر ---------- */
 async function sendReset(e) {
   e.preventDefault();
-  const { error } = await sb.from('reset_requests').insert({ phone: $('r_phone').value.trim().replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[\s-]/g, '') });
-  S.err = error ? 'تعذر إرسال الطلب، حاول تاني' : '';
-  S.ok = error ? '' : 'تم إرسال طلبك. تواصل مع المستر وهيبعتلك كلمة السر الجديدة.';
+  const ph = $('r_phone').value.trim().replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[\s-]/g, '');
+  const np = $('r_newpass').value, np2 = $('r_newpass2').value;
+  S.err = ''; S.ok = '';
+  if (!/^\d{8,15}$/.test(ph)) S.err = 'اكتب رقم الموبايل أرقام فقط';
+  else if (np.length < 6) S.err = 'كلمة السر لازم 6 حروف/أرقام على الأقل';
+  else if (np !== np2) S.err = 'كلمتين السر مش متطابقين';
+  else {
+    const { error } = await sb.from('reset_requests').insert({ phone: ph, new_pass: np });
+    if (error) S.err = /new_pass/i.test(error.message) ? 'الخاصية دي محتاجة تحديث بسيط من المستر في قاعدة البيانات، بلّغه.' : 'تعذر إرسال الطلب، حاول تاني';
+    else S.ok = 'تم إرسال طلبك ✅ هتقدر تدخل بكلمة السر الجديدة بعد ما المستر يوافق عليها.';
+  }
   render();
 }
 
@@ -591,15 +601,17 @@ function filterUsers(v) {
 /* ---------- تغيير كلمة السر من جنب الرقم الطالب ---------- */
 async function resetByReq(i) {
   const phone = S.reqList?.[i];
-  const np = ($('rp_' + i)?.value || '').trim();
-  if (np.length < 6) return alert('كلمة السر لازم 6 حروف/أرقام على الأقل');
   const p = S.profiles.find(x => x.phone === phone);
   if (!p) return alert('مفيش حساب مسجل بالرقم ده');
+  const asked = S.reqPass?.[i] || '';
+  const np = asked || ($('rp_' + i)?.value || '').trim();
+  if (np.length < 6) return alert('كلمة السر لازم 6 حروف/أرقام على الأقل');
+  if (asked && !confirm('موافقة على تغيير كلمة سر "' + p.full_name + '" (' + phone + ')؟\nاتأكد إن صاحب الرقم هو اللي طلب.')) return;
   const { error } = await sb.rpc('admin_reset_password', { p_user: p.id, p_pass: np });
   if (error) return alert('خطأ: ' + error.message);
   await sb.from('reset_requests').delete().eq('phone', phone);
   await loadData(); render();
-  alert('تم تغيير كلمة السر لـ ' + p.full_name + '.\nسلّمها له: ' + np);
+  alert(asked ? 'تمت الموافقة. ' + p.full_name + ' يقدر يدخل بكلمة السر اللي اختارها.' : 'تم تغيير كلمة السر لـ ' + p.full_name + '.\nسلّمها له: ' + np);
 }
 async function dropReq(i) {
   const phone = S.reqList?.[i];
@@ -790,9 +802,12 @@ function StudentAuth() {
 
 function Forgot() {
   return `${S.err ? `<div class="al e">${esc(S.err)}</div>` : ''}${S.ok ? `<div class="al s">${esc(S.ok)}</div>` : ''}
-  <p class="mu" style="margin-bottom:12px">اكتب رقم موبايلك وهيوصل طلب للمستر عشان يعيّنلك كلمة سر جديدة.</p>
-  <div class="note">⚠️ لازم تكتب <b>نفس رقم الموبايل اللي سجّلت بيه في المنصة بالظبط</b>. لو كتبت رقم تاني، المستر مش هيلاقي حسابك ومش هيعرف يغيّر كلمة السر.</div>
-  <form onsubmit="sendReset(event)"><div class="ig"><label>رقم الموبايل المسجّل في المنصة</label><input required id="r_phone" type="tel" placeholder="الرقم اللي سجّلت بيه (01xxxxxxxxx)"></div>
+  <p class="mu" style="margin-bottom:12px">اكتب رقم موبايلك وكلمة السر الجديدة اللي عايزها، وهيوصل الطلب للمستر عشان يوافق عليه.</p>
+  <div class="note">⚠️ لازم تكتب <b>نفس رقم الموبايل اللي سجّلت بيه في المنصة بالظبط</b>. لو كتبت رقم تاني، المستر مش هيلاقي حسابك. وهتقدر تدخل بالكلمة الجديدة بعد ما المستر يوافق عليها.</div>
+  <form onsubmit="sendReset(event)">
+  <div class="ig"><label>رقم الموبايل المسجّل في المنصة</label><input required id="r_phone" type="tel" placeholder="الرقم اللي سجّلت بيه (01xxxxxxxxx)"></div>
+  <div class="ig"><label>كلمة السر الجديدة</label><input required id="r_newpass" type="password" minlength="6" autocomplete="new-password"></div>
+  <div class="ig"><label>أكّد كلمة السر الجديدة</label><input required id="r_newpass2" type="password" minlength="6" autocomplete="new-password"></div>
   <button class="btn" type="submit">إرسال الطلب</button></form>
   <div class="sw"><a onclick="set({authMode:'login',err:'',ok:''})">رجوع لتسجيل الدخول</a></div>`;
 }
@@ -896,11 +911,13 @@ function Teacher() {
   const T = (k, t) => `<button class="dtb ${S.dashTab === k ? 'on' : ''}" onclick="set({dashTab:'${k}'})">${t}</button>`;
   const people = S.profiles.filter(p => p.role !== 'teacher');
   const reqs = [...new Set(S.resets.map(r => r.phone))]; S.reqList = reqs;
+  S.reqPass = reqs.map(ph => [...S.resets].reverse().find(r => r.phone === ph && r.new_pass)?.new_pass || '');
   const reqBox = reqs.length ? `<div class="rq"><h3>🔑 طلبات تغيير كلمة السر (${reqs.length})</h3>${reqs.map((ph, i) => {
-    const p = S.profiles.find(x => x.phone === ph);
+    const p = S.profiles.find(x => x.phone === ph), asked = S.reqPass[i];
     return `<div class="rqr"><div class="rqi"><b dir="ltr">${esc(ph)}</b><span class="mu">${p ? esc(p.full_name) : '⚠️ مفيش حساب بالرقم ده'}</span></div>
-      ${p ? `<input id="rp_${i}" class="rqp" placeholder="كلمة السر الجديدة" dir="ltr" autocomplete="off"><button class="sm" onclick="resetByReq(${i})">✔ تغيير</button>` : ''}
-      <button class="sm d" onclick="dropReq(${i})">تجاهل</button></div>`;
+      ${p && asked ? `<div class="rqa"><span class="mu">كلمة السر المطلوبة</span><code dir="ltr">${esc(asked)}</code></div><button class="sm" onclick="resetByReq(${i})">✔ موافقة</button>`
+        : p ? `<input id="rp_${i}" class="rqp" placeholder="كلمة السر الجديدة" dir="ltr" autocomplete="off"><button class="sm" onclick="resetByReq(${i})">✔ تغيير</button>` : ''}
+      <button class="sm d" onclick="dropReq(${i})">${asked ? 'رفض' : 'تجاهل'}</button></div>`;
   }).join('')}</div>` : '';
   let body = '';
   if (S.dashTab === 'users') {
