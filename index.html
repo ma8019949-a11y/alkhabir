@@ -2,6 +2,20 @@
 <html lang="ar" dir="rtl" data-theme="dark">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' blob: https:; connect-src 'self' https://mvykincoeacnpxfnwhoy.supabase.co; frame-src https://drive.google.com; object-src 'none'; base-uri 'none'; form-action 'self'; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<script>
+/* أمان: إجبار HTTPS + منع تضمين الصفحة جوه موقع تاني (clickjacking) */
+(function () {
+  try {
+    if (location.protocol === 'http:' && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) {
+      location.replace('https://' + location.host + location.pathname + location.search + location.hash); return;
+    }
+    if (window.top !== window.self) { document.documentElement.style.display = 'none'; window.top.location = window.self.location; }
+  } catch (e) {}
+})();
+</script>
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>منصة الخبير | دروس اللغة العربية مع الأستاذ عبد المنعم رجب</title>
 <meta name="description" content="منصة الخبير: شرح وحل دروس اللغة العربية للمرحلتين الإعدادية والثانوية مع الأستاذ عبد المنعم رجب، فيديوهات وامتحانات ومتابعة لولي الأمر.">
@@ -260,6 +274,12 @@ textarea.cl{width:100%;height:140px;background:var(--glow);color:var(--tx);borde
 .vpart h4{font-family:'Cairo',sans-serif;margin-bottom:12px;font-size:15px}
 .vpart h4 small{color:var(--mu);font-weight:500;font-size:12px}
 
+/* ملء الشاشة البديل على التلفون الطولي: بنلف الفيديو 90° عشان ياخد الشاشة كلها */
+@media (orientation:portrait){
+  .vr.full{inset:auto;top:0;left:0;right:auto;bottom:auto;width:100vh;width:100dvh;height:100vw;transform-origin:0 0;transform:translateX(100vw) rotate(90deg)}
+}
+.vr video,.vr iframe{object-fit:contain;background:#000}
+
 /* أزرار الفيديو */
 .fsx{display:none}
 .vr.full .fsx,.vr:fullscreen .fsx{display:block}
@@ -275,7 +295,7 @@ textarea.cl{width:100%;height:140px;background:var(--glow);color:var(--tx);borde
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
 <div id="letters" aria-hidden="true"></div>
@@ -334,15 +354,35 @@ const S = { loading:true, teacherExists:true, user:null, view:'home', authMode:'
 
 const $ = id => document.getElementById(id);
 const esc = s => (s ?? '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const safeUrl = u => { try { const x = new URL(u, location.href); return (x.protocol === 'https:' || x.protocol === 'http:') ? x.href : ''; } catch (e) { return ''; } };
+const sid = x => /^[0-9a-zA-Z_-]{1,64}$/.test(x ?? '') ? x : '';
+const isDriveUrl = u => { try { return new URL(u).hostname === 'drive.google.com'; } catch (e) { return false; } };
+class UErr extends Error {}
+const GENERIC_ERR = 'حصل خطأ، حاول تاني. لو المشكلة استمرت كلّم المستر.';
+const userMsg = er => (er instanceof UErr ? er.message : GENERIC_ERR);
+/* حماية بسيطة ضد تخمين كلمة السر من نفس الجهاز (الحماية الحقيقية على Supabase) */
+const THR = { key: 'alkhabeer-fails', max: 5, lock: [60, 300, 900] };
+const thrRead = () => { try { return JSON.parse(localStorage.getItem(THR.key) || '{}'); } catch (e) { return {}; } };
+const thrWrite = t => { try { localStorage.setItem(THR.key, JSON.stringify(t)); } catch (e) {} };
+const throttleLeft = () => Math.max(0, Math.ceil(((thrRead().until || 0) - Date.now()) / 1000));
+const throttleFail = () => {
+  const t = thrRead(); t.n = (t.n || 0) + 1;
+  if (t.n >= THR.max) { const lvl = Math.min(t.lvl || 0, THR.lock.length - 1); t.until = Date.now() + THR.lock[lvl] * 1000; t.lvl = lvl + 1; t.n = 0; }
+  thrWrite(t);
+};
+const throttleOk = () => { try { localStorage.removeItem(THR.key); } catch (e) {} };
 const fmt = d => d ? new Date(d).toLocaleString('ar-EG') : '—';
-const withTimeout = pr => Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new Error('الاتصال بطيء أو معلّق، حدّث الصفحة وجرّب تاني')), 20000))]);
-window.addEventListener('unhandledrejection', ev => { S.err = 'حصل خطأ غير متوقع: ' + (ev.reason?.message || ev.reason); S.loading = false; render(); });
+const withTimeout = pr => Promise.race([pr, new Promise((_, rej) => setTimeout(() => rej(new UErr('الاتصال بطيء أو معلّق، حدّث الصفحة وجرّب تاني')), 20000))]);
+window.addEventListener('unhandledrejection', ev => {
+  ev.preventDefault();
+  if (S.view === 'video') return; // متعيدش رسم الصفحة والفيديو شغال (كان بيرجّعه من الأول)
+  S.err = GENERIC_ERR; S.loading = false; render();
+});
 const render = () => {
   try { $('app').innerHTML = App(); }
   catch (e) {
-    console.error(e);
     S.dashTab = 'users'; S.printLesson = null;
-    $('app').innerHTML = `<div style="padding:24px;direction:ltr;color:#F87171;font-family:monospace">خطأ في عرض الصفحة / Render error:<br>${esc(e.message)}<br><br><button class="btn" style="width:auto;padding:10px 20px" onclick="location.reload()">Reload</button></div>`;
+    $('app').innerHTML = `<div style="padding:24px;direction:ltr;color:#F87171;font-family:monospace">خطأ في عرض الصفحة / Render error<br><br><button class="btn" style="width:auto;padding:10px 20px" onclick="location.reload()">Reload</button></div>`;
   }
 };
 const set = o => { Object.assign(S, o); render(); };
@@ -374,16 +414,19 @@ const examOf = (sid, lid) => S.exams.find(x => x.student_id === sid && x.lesson_
 const studentOf = () => {
   const u = S.user;
   if (u.role !== 'parent') return u;
-  return S.profiles.find(p => p.role === 'student' && (p.parent_phone === u.phone || p.full_name === u.child_name)) || null;
+  return S.profiles.find(p => p.role === 'student' && p.parent_phone === u.phone) || null;
 };
 
 /* ---------- تحميل البيانات (كلها من Supabase) ---------- */
+const LESSON_COLS = 'id,title,grade,exam_url,sort_order,created_at,video_meta';
 async function loadData() {
   const q = t => sb.from(t).select('*');
-  const [p, l, u, v, e] = await Promise.all([
-    q('profiles'), q('lessons').order('sort_order').order('created_at'),
+  const [p, l0, u, v, e] = await Promise.all([
+    q('profiles'), sb.from('lessons').select(LESSON_COLS).order('sort_order').order('created_at'),
     q('unlocks'), q('views').order('viewed_at', { ascending: false }), q('exams')
   ]);
+  let l = l0;
+  if (l.error) l = await q('lessons').order('sort_order').order('created_at'); // قبل تشغيل security.sql بس
   S.profiles = p.data || []; S.lessons = l.data || []; S.unlocks = u.data || [];
   S.views = v.data || []; S.exams = e.data || [];
   if (S.user.role === 'teacher') {
@@ -401,11 +444,11 @@ async function loadAll() {
         const r = await sb.from('profiles').select('*').eq('id', session.user.id).single();
         p = r.data;
       }
-      if (p) { try { await checkDevice(p); S.user = p; await loadData(); } catch (er) { S.err = er.message; } }
+      if (p) { try { await checkDevice(p); S.user = p; await loadData(); } catch (er) { S.err = userMsg(er); } }
       else S.err = 'تعذر تحميل بيانات حسابك، حدّث الصفحة أو سجّل الدخول تاني.';
     }
     if (!S.user) { const { data } = await sb.rpc('teacher_exists'); S.teacherExists = !!data; }
-  } catch (e) { console.error(e); }
+  } catch (e) {}
   S.loading = false; render();
 }
 
@@ -415,49 +458,52 @@ async function checkDevice(p) {
   const { data, error } = await sb.rpc('register_device', { p_device: DEVICE });
   if (error || data === 'limit') {
     await sb.auth.signOut();
-    throw new Error(error ? 'تعذر التحقق من الجهاز، حاول تاني' : 'الحساب ده مسجل على جهازين بالفعل. تواصل مع المستر لو عايز تدخل من جهاز جديد.');
+    throw new UErr(error ? 'تعذر التحقق من الجهاز، حاول تاني' : 'الحساب ده مسجل على جهازين بالفعل. تواصل مع المستر لو عايز تدخل من جهاز جديد.');
   }
 }
 
 /* ---------- المصادقة ---------- */
 async function doLogin(id, pass, wantTeacher) {
+  const wait = throttleLeft();
+  if (wait) throw new UErr('محاولات دخول غلط كتير. استنى ' + (wait > 60 ? Math.ceil(wait / 60) + ' دقيقة' : wait + ' ثانية') + ' وجرّب تاني.');
   const email = toEmail(id);
   const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
-  if (error) throw new Error('بيانات الدخول غير صحيحة');
+  if (error) { throttleFail(); throw new UErr('بيانات الدخول غير صحيحة'); }
+  throttleOk();
   const { data: p } = await sb.from('profiles').select('*').eq('id', data.user.id).single();
-  if (!p) { await sb.auth.signOut(); throw new Error('تعذر تحميل ملف المستخدم'); }
+  if (!p) { await sb.auth.signOut(); throw new UErr('تعذر تحميل ملف المستخدم'); }
   if (wantTeacher !== (p.role === 'teacher')) {
     await sb.auth.signOut();
-    throw new Error(wantTeacher ? 'هذا الحساب ليس حساب المستر' : 'استخدم تبويب المستر للدخول');
+    throw new UErr(wantTeacher ? 'هذا الحساب ليس حساب المستر' : 'استخدم تبويب المستر للدخول');
   }
   await checkDevice(p);
   S.user = p; S.view = 'home'; await loadData();
 }
 
 async function doSignup(f) {
-  if (!/^\d{8,15}$/.test(f.phone)) throw new Error('رقم الموبايل لازم أرقام فقط');
-  if (f.pass.length < 6) throw new Error('كلمة السر لازم 6 حروف/أرقام على الأقل');
+  if (!/^\d{8,15}$/.test(f.phone)) throw new UErr('رقم الموبايل لازم أرقام فقط');
+  if (f.pass.length < 8) throw new UErr('كلمة السر لازم 8 حروف/أرقام على الأقل');
   const { data, error } = await sb.auth.signUp({ email: toEmail(f.phone), password: f.pass });
-  if (error) throw new Error(/registered/i.test(error.message) ? 'رقم الموبايل ده مسجل قبل كده' : error.message);
-  if (!data.session) throw new Error('فعّل تسجيل الدخول بدون تأكيد إيميل من إعدادات Supabase');
+  if (error) throw new UErr(/registered/i.test(error.message) ? 'رقم الموبايل ده مسجل قبل كده' : 'تعذر إنشاء الحساب، جرّب تاني');
+  if (!data.session) throw new UErr('التسجيل غير متاح حالياً، كلّم المستر');
   const row = { id: data.user.id, full_name: f.name, role: S.authRole, phone: f.phone };
   if (S.authRole === 'student') { row.grade = f.grade; row.parent_phone = f.parentPhone; }
   else { row.child_name = f.childName; row.child_grade = f.childGrade; }
   const { error: e2 } = await sb.from('profiles').insert(row);
-  if (e2) { await sb.auth.signOut(); throw new Error('تعذر إنشاء الحساب: ' + e2.message); }
+  if (e2) { await sb.auth.signOut(); throw new UErr('تعذر إنشاء الحساب، جرّب تاني'); }
   await checkDevice(row);
   S.user = row; S.view = 'home'; await loadData();
 }
 
 async function doTeacherSignup(u, pass) {
-  if (u.length < 2) throw new Error('اسم المستخدم قصير');
-  if (pass.length < 6) throw new Error('كلمة السر لازم 6 حروف/أرقام على الأقل');
+  if (u.length < 2) throw new UErr('اسم المستخدم قصير');
+  if (pass.length < 8) throw new UErr('كلمة السر لازم 8 حروف/أرقام على الأقل');
   const { data, error } = await sb.auth.signUp({ email: toEmail(u), password: pass });
-  if (error) throw new Error(/registered/i.test(error.message) ? 'اسم المستخدم ده موجود قبل كده' : error.message);
-  if (!data.session) throw new Error('فعّل تسجيل الدخول بدون تأكيد إيميل من إعدادات Supabase');
+  if (error) throw new UErr(/registered/i.test(error.message) ? 'اسم المستخدم ده موجود قبل كده' : 'تعذر إنشاء الحساب، جرّب تاني');
+  if (!data.session) throw new UErr('التسجيل غير متاح حالياً، كلّم المستر');
   const row = { id: data.user.id, full_name: 'الأستاذ عبد المنعم رجب', role: 'teacher', phone: u };
   const { error: e2 } = await sb.from('profiles').insert(row);
-  if (e2) { await sb.auth.signOut(); throw new Error('تعذر إنشاء حساب المستر (غالباً موجود فعلاً): ' + e2.message); }
+  if (e2) { await sb.auth.signOut(); throw new UErr('تعذر إنشاء حساب المستر (غالباً موجود فعلاً)'); }
   S.user = row; S.teacherExists = true; S.view = 'home'; await loadData();
 }
 
@@ -474,7 +520,7 @@ async function handleStudentAuth(e) {
     else await doSignup({ name: v('f_name'), phone: v('f_phone'), pass: $('f_pass').value, grade: v('f_grade'),
       parentPhone: v('f_parentphone'), childName: v('f_childname'), childGrade: v('f_childgrade') });
     S.err = ''; S.ok = '';
-  } catch (er) { S.err = er.message; }
+  } catch (er) { S.err = userMsg(er); }
   render();
 }
 
@@ -485,7 +531,7 @@ async function handleTeacherAuth(e) {
     if (S.teacherExists) await withTimeout(doLogin(u, p, true)); else await withTimeout(doTeacherSignup(u, p));
     S.err = '';
   }
-  catch (er) { S.err = er.message; }
+  catch (er) { S.err = userMsg(er); }
   render();
 }
 
@@ -506,11 +552,18 @@ const closeCode = () => set({ codeModal: null });
 const openExam = lid => set({ lessonId: lid, view: 'exam' });
 function fsVideo() {
   const el = $('vbox'), d = document;
-  if (d.fullscreenElement || d.webkitFullscreenElement) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); return; }
+  const exit = () => { try { (d.exitFullscreen || d.webkitExitFullscreen).call(d); } catch (e) {} };
+  if (d.fullscreenElement || d.webkitFullscreenElement) { exit(); return; }
   if (el.classList.contains('full')) { el.classList.remove('full'); return; }
+  const portrait = () => window.innerHeight > window.innerWidth;
+  const fake = () => el.classList.add('full');           // وضع بديل: بيملا الشاشة وبيتلف 90° لو التلفون طولي
   const req = el.requestFullscreen || el.webkitRequestFullscreen;
-  if (req) Promise.resolve(req.call(el)).then(() => { try { screen.orientation.lock('landscape'); } catch (e) {} }).catch(() => el.classList.add('full'));
-  else el.classList.add('full');
+  if (!req) return fake();                               // زي iPhone: مفيش fullscreen لعنصر
+  Promise.resolve(req.call(el)).then(() => {
+    const o = screen.orientation;
+    if (o && o.lock) return o.lock('landscape').catch(() => { if (portrait()) { exit(); fake(); } });
+    if (portrait()) { exit(); fake(); }
+  }).catch(fake);
 }
 const goHome = () => set({ view: 'home', lessonId: null });
 
@@ -520,15 +573,16 @@ async function submitCode(e) {
   const lid = S.codeModal;
   const { data, error } = await sb.rpc('redeem_code', { p_code: code, p_lesson: lid });
   if (error) return set({ codeErr: 'حصل خطأ، حاول تاني' });
-  if (data !== 'ok') return set({ codeErr: data === 'used' ? 'الكود ده مستخدم قبل كده' : 'الكود غير صحيح' });
+  if (data !== 'ok') return set({ codeErr: ({ used: 'الكود ده مستخدم قبل كده', locked: 'محاولات غلط كتير. استنى 10 دقايق وجرّب تاني.', blocked: 'الحساب موقوف، كلّم المستر.', exam: 'لازم تخلّص الامتحان الأول.' })[data] || 'الكود غير صحيح' });
   await loadData(); S.codeModal = null;
   openVideo(lid);
 }
 
 async function doneExam() {
-  const { error } = await sb.from('exams').upsert(
-    { student_id: S.user.id, lesson_id: S.lessonId, submitted: true }, { onConflict: 'student_id,lesson_id' });
-  if (error) return alert('حصل خطأ: ' + error.message);
+  let { data, error } = await sb.rpc('submit_exam', { p_lesson: S.lessonId });
+  if (error && error.code === 'PGRST202') // قبل تشغيل security.sql بس
+    ({ error } = await sb.from('exams').upsert({ student_id: S.user.id, lesson_id: S.lessonId, submitted: true }, { onConflict: 'student_id,lesson_id' }));
+  if (error || (data && data !== 'ok')) return alert(GENERIC_ERR);
   await loadData(); set({ view: 'home', lessonId: null });
 }
 
@@ -554,12 +608,22 @@ const resolveVideo = async u => {
   return u || '';
 };
 S.videos = []; S.vi = 0;
+const videoLabels = l => {
+  if (l.video_meta) { try { const a = JSON.parse(l.video_meta); if (Array.isArray(a)) return a.map(x => String(x ?? '')); } catch (e) {} }
+  return parseVideos(l.video_url).map(p => p.t);
+};
 const setVideo = i => set({ vi: i, videoUrl: S.videos[i]?.url || '' });
 
 async function openVideo(lid) {
   const l = lesson(lid);
   if (!l || !hasUnlock(S.user.id, lid)) return;
-  const parts = parseVideos(l.video_url);
+  let raw = l.video_url;
+  if (raw === undefined) { // video_url مخفي عن الطلبة، بيتجاب من السيرفر بعد التأكد من الكود
+    const r = await sb.rpc('get_lesson_video', { p_lesson: lid });
+    if (r.error || !r.data) return alert('تعذر فتح الفيديو، حاول تاني أو كلّم المستر.');
+    raw = r.data;
+  }
+  const parts = parseVideos(raw);
   const vids = await Promise.all(parts.map(async p => ({ t: p.t, url: await resolveVideo(p.u) })));
   await sb.from('views').insert({ student_id: S.user.id, lesson_id: lid });
   await loadData();
@@ -575,11 +639,13 @@ async function sendReset(e) {
   const np = $('r_newpass').value, np2 = $('r_newpass2').value;
   S.err = ''; S.ok = '';
   if (!/^\d{8,15}$/.test(ph)) S.err = 'اكتب رقم الموبايل أرقام فقط';
-  else if (np.length < 6) S.err = 'كلمة السر لازم 6 حروف/أرقام على الأقل';
+  else if (np.length < 8 || np.length > 72) S.err = 'كلمة السر لازم تكون من 8 لـ 72 حرف/رقم';
   else if (np !== np2) S.err = 'كلمتين السر مش متطابقين';
   else {
-    const { error } = await sb.from('reset_requests').insert({ phone: ph, new_pass: np });
-    if (error) S.err = /new_pass/i.test(error.message) ? 'الخاصية دي محتاجة تحديث بسيط من المستر في قاعدة البيانات، بلّغه.' : 'تعذر إرسال الطلب، حاول تاني';
+    const { data, error } = await sb.rpc('request_password_reset', { p_phone: ph, p_pass: np });
+    if (error) S.err = 'تعذر إرسال الطلب، حاول تاني';
+    else if (data === 'limit') S.err = 'في طلبات كتير معلّقة، استنى المستر يراجعها.';
+    else if (data !== 'ok') S.err = 'بيانات غير صحيحة';
     else S.ok = 'تم إرسال طلبك ✅ هتقدر تدخل بكلمة السر الجديدة بعد ما المستر يوافق عليها.';
   }
   render();
@@ -603,15 +669,20 @@ async function resetByReq(i) {
   const phone = S.reqList?.[i];
   const p = S.profiles.find(x => x.phone === phone);
   if (!p) return alert('مفيش حساب مسجل بالرقم ده');
-  const asked = S.reqPass?.[i] || '';
-  const np = asked || ($('rp_' + i)?.value || '').trim();
-  if (np.length < 6) return alert('كلمة السر لازم 6 حروف/أرقام على الأقل');
-  if (asked && !confirm('موافقة على تغيير كلمة سر "' + p.full_name + '" (' + phone + ')؟\nاتأكد إن صاحب الرقم هو اللي طلب.')) return;
+  if (S.reqHas?.[i]) {
+    if (!confirm('موافقة على تغيير كلمة سر "' + p.full_name + '" (' + phone + ')؟\nاتأكد إن صاحب الرقم هو اللي طلب.')) return;
+    const { data, error } = await sb.rpc('admin_approve_reset', { p_phone: phone });
+    if (error || data !== 'ok') return alert('تعذر تنفيذ الموافقة. اتأكد إنك شغّلت security.sql.');
+    await loadData(); render();
+    return alert('تمت الموافقة. ' + p.full_name + ' يقدر يدخل بكلمة السر اللي اختارها.');
+  }
+  const np = ($('rp_' + i)?.value || '').trim();
+  if (np.length < 8) return alert('كلمة السر لازم 8 حروف/أرقام على الأقل');
   const { error } = await sb.rpc('admin_reset_password', { p_user: p.id, p_pass: np });
   if (error) return alert('خطأ: ' + error.message);
   await sb.from('reset_requests').delete().eq('phone', phone);
   await loadData(); render();
-  alert(asked ? 'تمت الموافقة. ' + p.full_name + ' يقدر يدخل بكلمة السر اللي اختارها.' : 'تم تغيير كلمة السر لـ ' + p.full_name + '.\nسلّمها له: ' + np);
+  alert('تم تغيير كلمة السر لـ ' + p.full_name + '.\nسلّمها له: ' + np);
 }
 async function dropReq(i) {
   const phone = S.reqList?.[i];
@@ -622,9 +693,9 @@ async function dropReq(i) {
 
 async function resetPass(id) {
   const p = S.profiles.find(x => x.id === id);
-  const np = prompt('كلمة السر الجديدة لـ ' + p.full_name + ' (6 على الأقل):');
+  const np = prompt('كلمة السر الجديدة لـ ' + p.full_name + ' (8 على الأقل):');
   if (!np) return;
-  if (np.length < 6) return alert('كلمة السر قصيرة');
+  if (np.length < 8) return alert('كلمة السر قصيرة (8 على الأقل)');
   const { error } = await sb.rpc('admin_reset_password', { p_user: id, p_pass: np });
   if (error) return alert('خطأ: ' + error.message);
   await sb.from('reset_requests').delete().eq('phone', p.phone);
@@ -647,7 +718,8 @@ async function addLesson(e) {
       let u = $(urlId).value.trim();
       const f = $(fileId).files[0];
       if (f) {
-        const ext = (f.name.split('.').pop() || 'mp4').replace(/\W/g, '');
+        const ext = (f.name.split('.').pop() || 'mp4').replace(/\W/g, '').toLowerCase();
+        if (!/^(mp4|webm|mov|m4v)$/.test(ext)) throw new Error('امتداد الفيديو غير مدعوم (mp4 / webm / mov فقط)');
         const path = `${Date.now()}_${tag}.${ext}`;
         const { error } = await sb.storage.from('videos').upload(path, f);
         if (error) throw error;
@@ -664,9 +736,10 @@ async function addLesson(e) {
     const n = Math.min(500, Math.max(1, +$('n_count').value || 100));
     const { data, error } = await sb.from('lessons').insert({
       title: $('n_title').value.trim(), grade, video_url: url,
-      exam_url: $('n_exam').value.trim() || null,
+      exam_url: safeUrl($('n_exam').value.trim()) || null,
+      video_meta: u2 ? JSON.stringify([$('n_lbl1').value.trim() || 'الشرح', $('n_lbl2').value.trim() || 'الحل']) : null,
       sort_order: S.lessons.filter(l => l.grade === grade).length + 1
-    }).select().single();
+    }).select('id').single();
     if (error) throw error;
     const codes = new Set();
     while (codes.size < n) codes.add(String(10000000 + Math.floor(Math.random() * 90000000)));
@@ -787,10 +860,10 @@ function StudentAuth() {
     <form onsubmit="handleStudentAuth(event)">
     ${login ? `
       <div class="ig"><label>رقم الموبايل</label><input required id="f_phone" type="tel" placeholder="01xxxxxxxxx"></div>
-      <div class="ig"><label>كلمة السر</label><input required id="f_pass" type="password"></div>` : `
+      <div class="ig"><label>كلمة السر</label><input required id="f_pass" type="password" autocomplete="current-password"></div>` : `
       <div class="ig"><label>${st ? 'اسم الطالب' : 'اسم ولي الأمر'}</label><input required id="f_name"></div>
       <div class="row"><div class="ig"><label>رقم الموبايل</label><input required id="f_phone" type="tel" placeholder="01xxxxxxxxx"></div>
-      <div class="ig"><label>كلمة السر</label><input required id="f_pass" type="password" minlength="6"></div></div>
+      <div class="ig"><label>كلمة السر</label><input required id="f_pass" type="password" minlength="8" autocomplete="new-password"></div></div>
       ${st ? `<div class="ig"><label>الصف الدراسي</label>${gradeOpts('f_grade')}</div>
         <div class="ig"><label>رقم موبايل ولي الأمر</label><input required id="f_parentphone" type="tel" placeholder="01xxxxxxxxx"></div>`
       : `<div class="ig"><label>اسم الابن / الابنة (نفس اسم الطالب)</label><input required id="f_childname"></div>
@@ -803,11 +876,11 @@ function StudentAuth() {
 function Forgot() {
   return `${S.err ? `<div class="al e">${esc(S.err)}</div>` : ''}${S.ok ? `<div class="al s">${esc(S.ok)}</div>` : ''}
   <p class="mu" style="margin-bottom:12px">اكتب رقم موبايلك وكلمة السر الجديدة اللي عايزها، وهيوصل الطلب للمستر عشان يوافق عليه.</p>
-  <div class="note">⚠️ لازم تكتب <b>نفس رقم الموبايل اللي سجّلت بيه في المنصة بالظبط</b>. لو كتبت رقم تاني، المستر مش هيلاقي حسابك. وهتقدر تدخل بالكلمة الجديدة بعد ما المستر يوافق عليها.</div>
+  <div class="note">⚠️ لازم تكتب <b>نفس رقم الموبايل اللي سجّلت بيه في المنصة بالظبط</b>. لو كتبت رقم تاني، المستر مش هيلاقي حسابك. وهتقدر تدخل بالكلمة الجديدة بعد ما المستر يوافق عليها. كلمة السر بتتشفّر ومحدش بيشوفها حتى المستر.</div>
   <form onsubmit="sendReset(event)">
   <div class="ig"><label>رقم الموبايل المسجّل في المنصة</label><input required id="r_phone" type="tel" placeholder="الرقم اللي سجّلت بيه (01xxxxxxxxx)"></div>
-  <div class="ig"><label>كلمة السر الجديدة</label><input required id="r_newpass" type="password" minlength="6" autocomplete="new-password"></div>
-  <div class="ig"><label>أكّد كلمة السر الجديدة</label><input required id="r_newpass2" type="password" minlength="6" autocomplete="new-password"></div>
+  <div class="ig"><label>كلمة السر الجديدة</label><input required id="r_newpass" type="password" minlength="8" autocomplete="new-password"></div>
+  <div class="ig"><label>أكّد كلمة السر الجديدة</label><input required id="r_newpass2" type="password" minlength="8" autocomplete="new-password"></div>
   <button class="btn" type="submit">إرسال الطلب</button></form>
   <div class="sw"><a onclick="set({authMode:'login',err:'',ok:''})">رجوع لتسجيل الدخول</a></div>`;
 }
@@ -818,7 +891,7 @@ function TeacherAuth() {
   ${setup ? `<div class="al s">أول مرة؟ اختار اسم مستخدم وكلمة سر لحساب المستر.</div>` : ''}
   <form onsubmit="handleTeacherAuth(event)">
     <div class="ig"><label>اسم المستخدم</label><input required id="t_user"></div>
-    <div class="ig"><label>كلمة السر</label><input required id="t_pass" type="password"></div>
+    <div class="ig"><label>كلمة السر</label><input required id="t_pass" type="password" autocomplete="current-password"></div>
     <button class="btn" type="submit">${setup ? 'إنشاء حساب المستر' : 'تسجيل الدخول'}</button></form>`;
 }
 
@@ -829,10 +902,10 @@ function StudentHome() {
   ${!ls.length ? `<div class="empty">لا توجد دروس متاحة لهذا الصف حالياً.</div>` : `<div class="grid">${ls.map((l, i) => {
     const un = !!hasUnlock(u.id, l.id);
     const examDone = !l.exam_url || examOf(u.id, l.id)?.submitted;
-    let txt = '🔒 إدخال كود التفعيل', cls = '', click = `openCode('${l.id}')`;
-    if (un) { txt = '▶ مشاهدة الدرس الآن'; cls = 'ok'; click = `openVideo('${l.id}')`; }
-    else if (!examDone) { txt = '📝 ادخل الامتحان المطلوب أولاً'; cls = 'ex'; click = `openExam('${l.id}')`; }
-    return `<div class="lc"><div class="num">${i + 1}</div><h3>${esc(l.title)}</h3><div class="mu">${esc(l.grade)}${parseVideos(l.video_url).length > 1 ? ' • 🎬 ' + parseVideos(l.video_url).map(p => esc(p.t)).join(' + ') : ''}</div>
+    let txt = '🔒 إدخال كود التفعيل', cls = '', click = `openCode('${sid(l.id)}')`;
+    if (un) { txt = '▶ مشاهدة الدرس الآن'; cls = 'ok'; click = `openVideo('${sid(l.id)}')`; }
+    else if (!examDone) { txt = '📝 ادخل الامتحان المطلوب أولاً'; cls = 'ex'; click = `openExam('${sid(l.id)}')`; }
+    return `<div class="lc"><div class="num">${i + 1}</div><h3>${esc(l.title)}</h3><div class="mu">${esc(l.grade)}${videoLabels(l).length > 1 ? ' • 🎬 ' + videoLabels(l).map(esc).join(' + ') : ''}</div>
       <div class="st"><span class="dot ${un ? 'on' : ''}"></span>${un ? 'الدرس متاح للمشاهدة' : (!examDone ? 'مطلوب حل الامتحان أولاً' : 'جاهز لإدخال كود التفعيل')}</div>
       <button class="la ${cls}" onclick="${click}">${txt}</button></div>`;
   }).join('')}</div>`}`;
@@ -852,18 +925,18 @@ function ExamView() {
   return `<button class="back" onclick="goHome()">← رجوع</button>
   <div class="vc"><h2>📝 امتحان: ${esc(l?.title)}</h2>
     <p class="mu" style="margin:12px 0 18px">افتح الامتحان وحله، وبعدين ارجع واضغط "خلصت الامتحان".</p>
-    <a href="${esc(l?.exam_url)}" target="_blank" rel="noopener"><button class="btn" type="button">فتح الامتحان</button></a>
+    ${safeUrl(l?.exam_url) ? `<a href="${esc(safeUrl(l.exam_url))}" target="_blank" rel="noopener noreferrer"><button class="btn" type="button">فتح الامتحان</button></a>` : '<p class="mu">رابط الامتحان غير صالح، كلّم المستر.</p>'}
     <button class="la ok" style="width:100%;margin-top:12px" onclick="doneExam()">✔ خلصت الامتحان</button></div>`;
 }
 
 function VideoView() {
   const l = lesson(S.lessonId);
-  const vu = S.videos?.[S.vi]?.url ?? S.videoUrl;
+  const vu = safeUrl(S.videos?.[S.vi]?.url ?? S.videoUrl);
   return `<button class="back" onclick="goHome()">← رجوع للدروس</button>
   <div class="vc"><h2>${esc(l?.title)}</h2><div class="mu">${esc(l?.grade)}</div>
   ${S.videos.length > 1 ? `<div class="vtabs">${S.videos.map((v, i) => `<button class="vtab ${i === S.vi ? 'on' : ''}" onclick="setVideo(${i})">${i === S.vi ? '▶ ' : ''}${esc(v.t)}</button>`).join('')}</div>` : ''}
   <div class="vr" id="vbox"><button class="fsb fsx" onclick="fsVideo()">✕ خروج</button>
-    ${vu.includes('drive.google.com')
+    ${isDriveUrl(vu)
       ? `<iframe src="${esc(vu)}" allow="autoplay; fullscreen; encrypted-media" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe>
          <div style="position:absolute;top:0;right:0;width:96px;height:88px;z-index:2"></div>`
       : `<video src="${esc(vu)}" controls controlsList="nodownload" disablePictureInPicture oncontextmenu="return false"></video>`}
@@ -911,12 +984,12 @@ function Teacher() {
   const T = (k, t) => `<button class="dtb ${S.dashTab === k ? 'on' : ''}" onclick="set({dashTab:'${k}'})">${t}</button>`;
   const people = S.profiles.filter(p => p.role !== 'teacher');
   const reqs = [...new Set(S.resets.map(r => r.phone))]; S.reqList = reqs;
-  S.reqPass = reqs.map(ph => [...S.resets].reverse().find(r => r.phone === ph && r.new_pass)?.new_pass || '');
+  S.reqHas = reqs.map(ph => S.resets.some(r => r.phone === ph && r.new_hash));
   const reqBox = reqs.length ? `<div class="rq"><h3>🔑 طلبات تغيير كلمة السر (${reqs.length})</h3>${reqs.map((ph, i) => {
-    const p = S.profiles.find(x => x.phone === ph), asked = S.reqPass[i];
+    const p = S.profiles.find(x => x.phone === ph), asked = S.reqHas[i];
     return `<div class="rqr"><div class="rqi"><b dir="ltr">${esc(ph)}</b><span class="mu">${p ? esc(p.full_name) : '⚠️ مفيش حساب بالرقم ده'}</span></div>
-      ${p && asked ? `<div class="rqa"><span class="mu">كلمة السر المطلوبة</span><code dir="ltr">${esc(asked)}</code></div><button class="sm" onclick="resetByReq(${i})">✔ موافقة</button>`
-        : p ? `<input id="rp_${i}" class="rqp" placeholder="كلمة السر الجديدة" dir="ltr" autocomplete="off"><button class="sm" onclick="resetByReq(${i})">✔ تغيير</button>` : ''}
+      ${p && asked ? `<div class="rqa"><span class="mu">الطالب اختار كلمة سر جديدة</span><code>🔒 مشفّرة (مش بتظهر لحد)</code></div><button class="sm" onclick="resetByReq(${i})">✔ موافقة</button>`
+        : p ? `<input id="rp_${i}" class="rqp" placeholder="كلمة السر الجديدة (8+)" dir="ltr" autocomplete="off"><button class="sm" onclick="resetByReq(${i})">✔ تغيير</button>` : ''}
       <button class="sm d" onclick="dropReq(${i})">${asked ? 'رفض' : 'تجاهل'}</button></div>`;
   }).join('')}</div>` : '';
   let body = '';
@@ -924,14 +997,14 @@ function Teacher() {
     body = reqBox + `<div class="srch"><input id="u_q" type="search" autocomplete="off" placeholder="🔍 ابحث بالاسم أو رقم الموبايل أو الصف..." value="${esc(S.q || '')}" oninput="filterUsers(this.value)"><span class="mu" id="u_n">${people.filter(p => hitQ(userText(p), S.q || '')).length} من ${people.length}</span></div><div class="tw"><table><thead><tr><th>الاسم</th><th>النوع</th><th>الموبايل</th><th>الصف</th><th>موبايل ولي الأمر / الابن</th><th>دروس مفتوحة</th><th>الأجهزة</th><th>إجراءات</th></tr></thead><tbody id="utb">
     ${!people.length ? `<tr><td colspan="7" class="empty">لا توجد حسابات.</td></tr>` : people.map(p => `<tr data-s="${esc(userText(p))}"${hitQ(userText(p), S.q || '') ? '' : ' style="display:none"'}>
       <td>${esc(p.full_name)}${p.blocked ? ' 🚫' : ''}${S.resets.some(r => r.phone === p.phone) ? ' 🔑' : ''}</td>
-      <td><span class="pill ${p.role}">${p.role === 'student' ? 'طالب' : 'ولي أمر'}</span></td>
+      <td><span class="pill ${esc(p.role)}">${p.role === 'student' ? 'طالب' : 'ولي أمر'}</span></td>
       <td dir="ltr">${esc(p.phone)}</td><td>${esc(p.grade || p.child_grade)}</td>
       <td>${esc(p.role === 'student' ? p.parent_phone : p.child_name)}</td>
       <td>${p.role === 'student' ? S.unlocks.filter(u => u.student_id === p.id).length : '—'}</td>
       <td>${S.devices.filter(d => d.user_id === p.id).length}/2</td>
-      <td>${p.role === 'student' ? `<button class="sm w" onclick="setNote('${p.id}')">ملاحظة</button>` : ''}
-      <button class="sm" onclick="resetPass('${p.id}')">🔑 كلمة سر</button><button class="sm w" onclick="clearDevices('${p.id}')">مسح الأجهزة</button>
-      <button class="sm d" onclick="toggleBlock('${p.id}')">${p.blocked ? 'فك الحظر' : 'حظر'}</button></td></tr>`).join('') + `<tr id="u_none" style="display:none"><td colspan="8" class="empty">مفيش نتايج للبحث ده.</td></tr>`}
+      <td>${p.role === 'student' ? `<button class="sm w" onclick="setNote('${sid(p.id)}')">ملاحظة</button>` : ''}
+      <button class="sm" onclick="resetPass('${sid(p.id)}')">🔑 كلمة سر</button><button class="sm w" onclick="clearDevices('${sid(p.id)}')">مسح الأجهزة</button>
+      <button class="sm d" onclick="toggleBlock('${sid(p.id)}')">${p.blocked ? 'فك الحظر' : 'حظر'}</button></td></tr>`).join('') + `<tr id="u_none" style="display:none"><td colspan="8" class="empty">مفيش نتايج للبحث ده.</td></tr>`}
     </tbody></table></div>`;
   } else if (S.dashTab === 'lessons') {
     body = `<form class="add" onsubmit="addLesson(event)"><h3 style="margin-bottom:14px">➕ إضافة درس</h3>
@@ -951,20 +1024,20 @@ function Teacher() {
       ${S.lessons.map(l => {
         const cs = S.codes.filter(c => c.lesson_id === l.id), free = cs.filter(c => !c.used_by);
         return `<div class="lc" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <div><h3>${esc(l.title)}</h3><div class="mu">${esc(l.grade)}${parseVideos(l.video_url).length > 1 ? ' • 🎬 ' + parseVideos(l.video_url).length + ' فيديوهات' : ''} • الأكواد: ${free.length} متاح / ${cs.length - free.length} مستخدم</div></div>
-        <div><button class="sm" onclick="set({showCodes:S.showCodes==='${l.id}'?null:'${l.id}'})">الأكواد</button>
-        <button class="sm" onclick="addCodes('${l.id}')">➕ أكواد</button>
-        <button class="sm w" onclick="removeCodes('${l.id}')">➖ أكواد</button>
-        <button class="sm w" onclick="set({printLesson:'${l.id}'})">📄 PDF</button>
-        <button class="sm d" onclick="delLesson('${l.id}')">حذف</button></div></div>
-        ${S.showCodes === l.id ? `<textarea class="cl" readonly>${free.map(c => c.code).join('\n')}</textarea>` : ''}</div>`;
+        <div><h3>${esc(l.title)}</h3><div class="mu">${esc(l.grade)}${videoLabels(l).length > 1 ? ' • 🎬 ' + videoLabels(l).length + ' فيديوهات' : ''} • الأكواد: ${free.length} متاح / ${cs.length - free.length} مستخدم</div></div>
+        <div><button class="sm" onclick="set({showCodes:S.showCodes==='${sid(l.id)}'?null:'${sid(l.id)}'})">الأكواد</button>
+        <button class="sm" onclick="addCodes('${sid(l.id)}')">➕ أكواد</button>
+        <button class="sm w" onclick="removeCodes('${sid(l.id)}')">➖ أكواد</button>
+        <button class="sm w" onclick="set({printLesson:'${sid(l.id)}'})">📄 PDF</button>
+        <button class="sm d" onclick="delLesson('${sid(l.id)}')">حذف</button></div></div>
+        ${S.showCodes === l.id ? `<textarea class="cl" readonly>${free.map(c => esc(c.code)).join('\n')}</textarea>` : ''}</div>`;
       }).join('') || '<div class="empty">لا توجد دروس.</div>'}`;
   } else {
     body = `<div class="tw"><table><thead><tr><th>الطالب</th><th>الدرس</th><th>الحالة</th><th>الدرجة</th><th></th></tr></thead><tbody>
     ${!S.exams.length ? `<tr><td colspan="5" class="empty">لا توجد امتحانات مسلّمة.</td></tr>` : S.exams.map(x => `<tr>
       <td>${esc(S.profiles.find(p => p.id === x.student_id)?.full_name)}</td><td>${esc(lesson(x.lesson_id)?.title)}</td>
       <td>${x.submitted ? 'تم الحل' : '—'}</td><td>${esc(x.score || '—')}</td>
-      <td><button class="sm" onclick="setScore('${x.student_id}','${x.lesson_id}')">إدخال الدرجة</button></td></tr>`).join('')}
+      <td><button class="sm" onclick="setScore('${sid(x.student_id)}','${sid(x.lesson_id)}')">إدخال الدرجة</button></td></tr>`).join('')}
     </tbody></table></div>`;
   }
   return `<div class="sh"><h2>لوحة المستر</h2><span>${people.length} حساب مسجل</span></div>
